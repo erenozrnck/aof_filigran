@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Filigran Aracı - Akıllı Ölçekleme</title>
+    <title>AÖF Araçları - Filigran & Birleştirme</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PDF-Lib Library (PDF Düzenleme) -->
@@ -13,6 +13,8 @@
     <script src="https://unpkg.com/@pdf-lib/fontkit/dist/fontkit.umd.js"></script>
     <!-- PDF.js (PDF Görüntüleme/Render) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- JSZip (Toplu İndirme) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -26,150 +28,251 @@
             background-color: #eff6ff;
         }
 
-        /* Önizleme Canvas Stili */
         #previewCanvas {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             border: 1px solid #e5e7eb;
             max-width: 100%;
             height: auto;
             margin: 0 auto;
         }
+
+        .sidebar {
+            transition: width 0.3s;
+        }
     </style>
 </head>
 
-<body class="min-h-screen p-4 flex flex-col items-center">
+<body class="h-screen flex overflow-hidden">
 
-    <!-- Header -->
-    <div class="w-full max-w-6xl mb-6 text-center">
-        <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-file-pdf text-blue-600 mr-2"></i>Gelişmiş PDF
-            Filigran Aracı</h1>
-        <p class="text-gray-500 mt-1">Belgelerinizi güvenle filigranlayın. Uzun metinler otomatik sığdırılır.</p>
-    </div>
-
-    <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-
-        <!-- LEFT COLUMN: Controls -->
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div class="bg-blue-600 p-4 text-white font-semibold flex items-center">
-                <i class="fa-solid fa-sliders mr-2"></i> Ayarlar
-            </div>
-
-            <div class="p-6 space-y-6">
-                <!-- File Upload -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-gray-700">PDF Dosyası</label>
-                    <div id="dropZone"
-                        class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-blue-400 hover:bg-gray-50">
-                        <input type="file" id="pdfInput" accept="application/pdf" class="hidden">
-                        <div id="uploadText">
-                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-500">Dosyayı buraya sürükleyin</p>
-                        </div>
-                        <div id="fileInfo" class="hidden flex items-center justify-center space-x-2 text-blue-600">
-                            <i class="fa-solid fa-check-circle"></i>
-                            <span id="fileName" class="font-medium text-sm truncate max-w-[200px]"></span>
-                            <button id="removeFile" class="text-red-500 hover:text-red-700 ml-2"><i
-                                    class="fa-solid fa-times"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="border-gray-100">
-
-                <!-- Input Fields (Textareas for Multi-line) -->
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Üst Bilgi
-                                (Header)</label>
-                            <div class="flex items-center space-x-2">
-                                <label class="text-xs text-gray-400">Boyut:</label>
-                                <input type="number" id="headerFontSize" value="12" min="6" max="72"
-                                    class="w-16 h-6 text-xs border border-gray-300 rounded px-1 text-center outline-none focus:border-blue-500">
-                            </div>
-                        </div>
-                        <textarea id="headerText" rows="4"
-                            class="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
-                            placeholder="Örn: GİZLİ BELGE&#10;YÖNETİM KURULU KARARI"></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Orta
-                            Filigran (Otomatik Sığdırma)</label>
-                        <textarea id="watermarkText" rows="4"
-                            class="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
-                            placeholder="Örn: TASLAKTIR&#10;Çok uzun bir metin girseniz bile sayfaya sığdırılacaktır."></textarea>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Alt Bilgi
-                                (Footer)</label>
-                            <div class="flex items-center space-x-2">
-                                <label class="text-xs text-gray-400">Boyut:</label>
-                                <input type="number" id="footerFontSize" value="12" min="6" max="72"
-                                    class="w-16 h-6 text-xs border border-gray-300 rounded px-1 text-center outline-none focus:border-blue-500">
-                            </div>
-                        </div>
-                        <textarea id="footerText" rows="4"
-                            class="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
-                            placeholder="Örn: Sayfa No: ...&#10;Bu belge elektronik imzalıdır."></textarea>
-                    </div>
-                </div>
-
-                <!-- Action Button -->
-                <button id="processBtn" onclick="processAndDownloadPDF()"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow transition transform active:scale-95 flex items-center justify-center space-x-2 disabled:bg-gray-400 disabled:cursor-not-allowed">
-                    <i class="fa-solid fa-download"></i>
-                    <span>PDF'i İndir</span>
-                </button>
-
-                <div id="status" class="hidden rounded-lg p-3 text-sm text-center font-medium"></div>
-            </div>
+    <!-- SIDEBAR -->
+    <div id="sidebar"
+        class="bg-gray-900 text-white w-64 flex flex-col shadow-2xl z-20 transition-all duration-300 relative">
+        <div class="p-6 border-b border-gray-700 flex items-center justify-between">
+            <h2 class="text-xl font-bold tracking-wider"><i class="fa-solid fa-toolbox mr-2"></i>Araçlar</h2>
+            <button id="toggleSidebar" class="text-gray-400 hover:text-white lg:hidden"><i
+                    class="fa-solid fa-bars"></i></button>
         </div>
 
-        <!-- RIGHT COLUMN: Preview -->
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col h-full min-h-[500px]">
-            <div class="bg-gray-800 p-4 text-white font-semibold flex items-center justify-between">
-                <span><i class="fa-solid fa-eye mr-2"></i> Önizleme (Sayfa 1)</span>
-                <span id="previewStatus" class="text-xs text-gray-400 font-normal">Bekleniyor...</span>
-            </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchView('watermark')" id="nav-watermark"
+                class="w-full text-left py-3 px-4 rounded-lg bg-blue-600 text-white shadow-lg transition-all hover:bg-blue-700 flex items-center">
+                <i class="fa-solid fa-stamp w-8 text-center"></i>
+                <span class="font-medium">Filigran Ekle</span>
+            </button>
+            <button onclick="switchView('merger')" id="nav-merger"
+                class="w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center">
+                <i class="fa-solid fa-object-group w-8 text-center"></i>
+                <span class="font-medium">PDF Birleştir</span>
+            </button>
+        </nav>
 
-            <div class="p-4 bg-gray-100 flex-grow flex items-center justify-center relative overflow-auto">
-                <!-- Canvas Container -->
-                <div id="canvasContainer" class="relative hidden">
-                    <canvas id="previewCanvas"></canvas>
+        <div class="p-4 border-t border-gray-800 text-xs text-center text-gray-500">
+            v2.0 • AÖF Araç Seti
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        <!-- Mobile Header -->
+        <div class="lg:hidden bg-white shadow p-4 flex items-center justify-between z-10">
+            <h1 class="font-bold text-gray-800">AÖF Araç Seti</h1>
+            <button onclick="toggleSidebarInternal()" class="text-gray-600"><i
+                    class="fa-solid fa-bars text-xl"></i></button>
+        </div>
+
+        <div class="flex-1 overflow-auto p-4 lg:p-8 relative">
+
+            <!-- ============================== VIEW 1: WATERMARK TOOL ============================== -->
+            <div id="view-watermark" class="view-section transition-opacity duration-300">
+                <div class="w-full max-w-6xl mb-6 text-center mx-auto">
+                    <h1 class="text-3xl font-bold text-gray-800"><i
+                            class="fa-solid fa-file-pdf text-blue-600 mr-2"></i>Gelişmiş PDF Filigran Aracı</h1>
+                    <p class="text-gray-500 mt-1">Belgelerinizi güvenle filigranlayın. Otomatik hizalama ve sığdırma.
+                    </p>
                 </div>
 
-                <!-- Empty State -->
-                <div id="emptyState" class="text-center text-gray-400">
-                    <i class="fa-solid fa-file-pdf text-6xl mb-4 opacity-30"></i>
-                    <p>Önizleme görmek için bir PDF dosyası yükleyin.</p>
-                </div>
-
-                <!-- Loading Spinner Overlay -->
-                <div id="previewLoading"
-                    class="hidden absolute inset-0 bg-gray-100/80 z-10 flex items-center justify-center">
-                    <div class="text-center">
-                        <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500"></i>
-                        <p class="mt-2 text-gray-600 font-medium">Oluşturuluyor...</p>
+                <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mx-auto">
+                    <!-- LEFT COLUMN -->
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                        <div class="bg-blue-600 p-4 text-white font-semibold flex items-center"><i
+                                class="fa-solid fa-sliders mr-2"></i> Ayarlar</div>
+                        <div class="p-6 space-y-6">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">PDF Dosyası</label>
+                                <div id="dropZone"
+                                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-blue-400 hover:bg-gray-50">
+                                    <input type="file" id="pdfInput" accept="application/pdf" class="hidden">
+                                    <div id="uploadText">
+                                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-sm text-gray-500">Dosyayı buraya sürükleyin</p>
+                                    </div>
+                                    <div id="fileInfo"
+                                        class="hidden flex items-center justify-center space-x-2 text-blue-600">
+                                        <i class="fa-solid fa-check-circle"></i>
+                                        <span id="fileName" class="font-medium text-sm truncate max-w-[200px]"></span>
+                                        <button id="removeFile" class="text-red-500 hover:text-red-700 ml-2"><i
+                                                class="fa-solid fa-times"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="border-gray-100">
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label
+                                            class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Üst
+                                            Bilgi (Header)</label>
+                                        <div class="flex items-center space-x-2"><label
+                                                class="text-xs text-gray-400">Boyut:</label><input type="number"
+                                                id="headerFontSize" value="7" min="6" max="72"
+                                                class="w-16 h-6 text-xs border border-gray-300 rounded px-1 text-center outline-none focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <textarea id="headerText" rows="4"
+                                        class="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
+                                        placeholder="Örn: GİZLİ BELGE&#10;YÖNETİM KURULU KARARI">Açıköğretim Fakültesi ile ilgili merak ettiğiniz her şey AOSDESTEK Sisteminde. AOSDESTEK Sistemine aosdestek.anadolu.edu.tr adresinden ulaşabilirsiniz.</textarea>
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Orta
+                                        Filigran (Otomatik Sığdırma)</label>
+                                    <textarea id="watermarkText" rows="4"
+                                        class="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
+                                        placeholder="Örn: TASLAKTIR&#10;Çok uzun bir metin girseniz bile sayfaya sığdırılacaktır.">      Anadolu Üniversitesi Açıköğretim Fakültesi&#10;      2025-2026 Güz Dönemi&#10;      Arasınav</textarea>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label
+                                            class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Alt
+                                            Bilgi (Footer)</label>
+                                        <div class="flex items-center space-x-2"><label
+                                                class="text-xs text-gray-400">Boyut:</label><input type="number"
+                                                id="footerFontSize" value="7" min="6" max="72"
+                                                class="w-16 h-6 text-xs border border-gray-300 rounded px-1 text-center outline-none focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <textarea id="footerText" rows="4"
+                                        class="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
+                                        placeholder="Örn: Sayfa No: ...&#10;Bu belge elektronik imzalıdır.">Anadolu Üniversitesi tarafından hazırlanmış olan bu testlerin her hakkı saklıdır. Hangi amaçla olursa olsun, testlerin tamamının veya bir kısmının Anadolu Üniversitesi'nin yazılı izni olmadan kopya edilmesi, fotoğraflarının çekilmesi, herhangi bir yolla çoğaltılması ya da kullanılması yasaktır. Bu yasağa uymayanlar gerekli cezai sorumluluğu ve testlerin hazırlanmasındaki mali külfeti peşinen kabullenmiş sayılır.</textarea>
+                                </div>
+                            </div>
+                            <button id="processBtn" onclick="processAndDownloadPDF()"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow transition transform active:scale-95 flex items-center justify-center space-x-2 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-download"></i><span>PDF'i İndir</span>
+                            </button>
+                            <div id="status" class="hidden rounded-lg p-3 text-sm text-center font-medium"></div>
+                        </div>
+                    </div>
+                    <!-- RIGHT COLUMN -->
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col h-full min-h-[500px]">
+                        <div class="bg-gray-800 p-4 text-white font-semibold flex items-center justify-between">
+                            <span><i class="fa-solid fa-eye mr-2"></i> Önizleme (Sayfa 1)</span>
+                            <span id="previewStatus" class="text-xs text-gray-400 font-normal">Bekleniyor...</span>
+                        </div>
+                        <div class="p-4 bg-gray-100 flex-grow flex items-center justify-center relative overflow-auto">
+                            <div id="canvasContainer" class="relative hidden"><canvas id="previewCanvas"></canvas></div>
+                            <div id="emptyState" class="text-center text-gray-400"><i
+                                    class="fa-solid fa-file-pdf text-6xl mb-4 opacity-30"></i>
+                                <p>Önizleme görmek için bir PDF dosyası yükleyin.</p>
+                            </div>
+                            <div id="previewLoading"
+                                class="hidden absolute inset-0 bg-gray-100/80 z-10 flex items-center justify-center">
+                                <div class="text-center"><i
+                                        class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+                                    <p class="mt-2 text-gray-600 font-medium">Oluşturuluyor...</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
+            <!-- ============================== VIEW 2: MERGER TOOL ============================== -->
+            <div id="view-merger" class="view-section hidden transition-opacity duration-300">
+                <div class="w-full max-w-4xl mb-6 text-center mx-auto">
+                    <h1 class="text-3xl font-bold text-gray-800"><i
+                            class="fa-solid fa-object-group text-purple-600 mr-2"></i>Otomatik Sınav Birleştirici</h1>
+                    <p class="text-gray-500 mt-1">Sınav gruplarını (A, B, C, D) otomatik tanır ve ders bazında tek PDF
+                        haline getirir.</p>
+                </div>
+
+                <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <div class="bg-purple-600 p-6 text-white text-center">
+                        <div id="dropZoneMerger"
+                            class="border-2 border-dashed border-white/40 bg-white/10 rounded-xl p-8 cursor-pointer transition-all hover:bg-white/20">
+                            <input type="file" id="pdfInputMerger" accept="application/pdf" multiple class="hidden">
+                            <i class="fa-solid fa-folder-open text-4xl mb-3"></i>
+                            <h3 class="text-lg font-bold">Dosyaları Buraya Sürükleyin veya Seçin</h3>
+                            <p class="text-sm opacity-80 mt-2">Çoklu seçim yapabilirsiniz. (Örn: ADL201U_A.pdf,
+                                ADL201U_B.pdf...)</p>
+                        </div>
+                    </div>
+
+                    <div id="mergerContent" class="p-6 hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-700">Bulunan Ders Grupları</h3>
+                            <span id="groupCountBadge"
+                                class="bg-purple-100 text-purple-800 text-xs font-bold px-2 py-1 rounded-full">0
+                                Grup</span>
+                        </div>
+
+                        <div id="groupsContainer" class="space-y-4 mb-6">
+                            <!-- JS ile doldurulacak -->
+                        </div>
+
+                        <button id="mergeBtn" onclick="processMerging()"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Birleştir ve İndir</span>
+                        </button>
+                        <div id="mergeStatus" class="mt-4 text-center text-sm font-medium text-gray-600"></div>
+                    </div>
+
+                    <!-- Initial State Message -->
+                    <div id="mergerEmpty" class="p-12 text-center text-gray-400">
+                        <i class="fa-solid fa-layer-group text-5xl mb-4 opacity-20"></i>
+                        <p>Henüz dosya seçilmedi.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 
+    <!-- MAIN SCRIPT -->
     <script>
-        // --- 1. CONFIGURATION ---
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // ================= SPA NAVIGATION =================
+        function switchView(viewName) {
+            // Hide all
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
 
-        // --- 2. STATE ---
+            // Reset Nav Styles
+            document.getElementById('nav-watermark').className = "w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center";
+            document.getElementById('nav-merger').className = "w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center";
+
+            // Show Active
+            document.getElementById('view-' + viewName).classList.remove('hidden');
+
+            // Set Active Nav Style
+            const activeClass = "w-full text-left py-3 px-4 rounded-lg bg-blue-600 text-white shadow-lg transition-all hover:bg-blue-700 flex items-center";
+            const purpleClass = "w-full text-left py-3 px-4 rounded-lg bg-purple-600 text-white shadow-lg transition-all hover:bg-purple-700 flex items-center";
+
+            if (viewName === 'watermark') document.getElementById('nav-watermark').className = activeClass;
+            if (viewName === 'merger') document.getElementById('nav-merger').className = purpleClass;
+        }
+
+        function toggleSidebarInternal() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+            sidebar.classList.toggle('absolute'); // Mobile overlay mode if needed
+        }
+
+        // ================= WATERMARK TOOL LOGIC (EXISTING) =================
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         let originalPdfBytes = null;
         let cachedFontBytes = null;
         let previewDebounceTimer;
 
-        // --- 3. UI ELEMENTS ---
         const fileInput = document.getElementById('pdfInput');
         const dropZone = document.getElementById('dropZone');
         const canvas = document.getElementById('previewCanvas');
@@ -180,7 +283,6 @@
 
         const inputs = ['headerText', 'watermarkText', 'footerText', 'headerFontSize', 'footerFontSize'];
 
-        // --- 4. EVENT LISTENERS ---
         inputs.forEach(id => {
             document.getElementById(id).addEventListener('input', () => {
                 clearTimeout(previewDebounceTimer);
@@ -204,29 +306,19 @@
             resetApp();
         });
 
-        // --- 5. CORE LOGIC ---
         async function handleFileSelect(file) {
-            if (file.type !== 'application/pdf') {
-                alert("Lütfen geçerli bir PDF dosyası seçin.");
-                return;
-            }
+            if (file.type !== 'application/pdf') { alert("Lütfen geçerli bir PDF dosyası seçin."); return; }
             document.getElementById('fileName').textContent = file.name;
             document.getElementById('uploadText').classList.add('hidden');
             document.getElementById('fileInfo').classList.remove('hidden');
             emptyState.classList.add('hidden');
             canvasContainer.classList.remove('hidden');
-
             try {
                 previewLoading.classList.remove('hidden');
                 originalPdfBytes = await file.arrayBuffer();
                 await ensureFontLoaded();
                 await updatePreview();
-            } catch (err) {
-                console.error(err);
-                alert("Dosya yüklenirken hata oluştu.");
-            } finally {
-                previewLoading.classList.add('hidden');
-            }
+            } catch (err) { console.error(err); alert("Dosya yüklenirken hata oluştu."); } finally { previewLoading.classList.add('hidden'); }
         }
 
         function resetApp() {
@@ -247,303 +339,314 @@
                 try {
                     const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
                     cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
-                } catch (e) {
-                    console.error("Font error:", e);
-                    alert("Font yüklenemedi. İnternet bağlantısını kontrol edin.");
-                }
+                } catch (e) { console.error("Font error:", e); alert("Font yüklenemedi."); }
             }
         }
 
-        // --- HELPER: Wrap Text Logic ---
         function wrapText(text, font, fontSize, maxWidth) {
             if (!text) return [];
             const paragraphs = text.split('\n');
             let lines = [];
-
             paragraphs.forEach(paragraph => {
                 const words = paragraph.split(' ');
                 let currentLine = '';
-
                 words.forEach(word => {
                     const testLine = currentLine ? currentLine + ' ' + word : word;
                     const width = font.widthOfTextAtSize(testLine, fontSize);
-
-                    if (width < maxWidth) {
-                        currentLine = testLine;
-                    } else {
-                        if (currentLine) lines.push(currentLine);
-                        currentLine = word;
-                    }
+                    if (width < maxWidth) currentLine = testLine;
+                    else { if (currentLine) lines.push(currentLine); currentLine = word; }
                 });
                 if (currentLine) lines.push(currentLine);
             });
             return lines;
         }
 
-        // --- HELPER: Draw Multi-line Text with TRUE Auto-Scaling ---
         function drawOverlay(page, font, rgb, degrees, texts, settings) {
             const { width, height } = page.getSize();
-            const margin = 40; // Sağdan soldan boşluk
+            const margin = 40;
             const maxWidth = width - (margin * 2);
 
-            // 1. HEADER
             if (texts.header) {
                 const fontSize = parseInt(settings.headerFontSize) || 7;
                 const lineHeight = fontSize * 1.3;
-
-                // Wrap text
                 const lines = wrapText(texts.header, font, fontSize, maxWidth);
                 const isMultiLine = lines.length > 1;
-
                 lines.forEach((line, i) => {
                     const textWidth = font.widthOfTextAtSize(line, fontSize);
-                    let xPos;
-
-                    if (isMultiLine) {
-                        // Çok satırlıysa SOLA yasla (Left Align)
-                        xPos = margin;
-                    } else {
-                        // Tek satırsa ORTALA (Center Align)
-                        xPos = (width / 2) - (textWidth / 2);
-                    }
-
-                    page.drawText(line, {
-                        x: xPos,
-                        y: height - 30 - (i * lineHeight),
-                        size: fontSize, font: font, color: rgb(0, 0, 0),
-                    });
+                    let xPos = isMultiLine ? margin : (width / 2) - (textWidth / 2);
+                    page.drawText(line, { x: xPos, y: height - 30 - (i * lineHeight), size: fontSize, font: font, color: rgb(0, 0, 0) });
                 });
             }
 
-            // 2. FOOTER
             if (texts.footer) {
                 const fontSize = parseInt(settings.footerFontSize) || 7;
                 const lineHeight = fontSize * 1.3;
-
-                // Wrap text
                 const lines = wrapText(texts.footer, font, fontSize, maxWidth);
                 const isMultiLine = lines.length > 1;
-
-                // Footer Başlangıç Yüksekliği Düzeltildi
-                // Sayfa numarasının ALTINA inmesi için margin azaltıldı (15px)
                 const footerBottomMargin = 15;
-
                 lines.forEach((line, i) => {
                     const textWidth = font.widthOfTextAtSize(line, fontSize);
-                    let xPos;
-
-                    if (isMultiLine) {
-                        // Çok satırlıysa SOLA yasla
-                        xPos = margin;
-                    } else {
-                        // Tek satırsa ORTALA
-                        xPos = (width / 2) - (textWidth / 2);
-                    }
-
-                    // En alt satır footerBottomMargin'de olacak şekilde:
+                    let xPos = isMultiLine ? margin : (width / 2) - (textWidth / 2);
                     const lineY = footerBottomMargin + ((lines.length - 1 - i) * lineHeight);
-
-                    page.drawText(line, {
-                        x: xPos,
-                        y: lineY,
-                        size: fontSize, font: font, color: rgb(0, 0, 0),
-                    });
+                    page.drawText(line, { x: xPos, y: lineY, size: fontSize, font: font, color: rgb(0, 0, 0) });
                 });
             }
 
-            // 3. WATERMARK (Yenilenmiş Algoritma)
             if (texts.watermark) {
-                // Sondaki boşlukları ve enterları temizle ki merkezleme kaymasın
-                // "TrimRight" mantığı
                 const effectiveText = texts.watermark.replace(/\s+$/, '');
                 if (!effectiveText) return;
-
                 const lines = effectiveText.split('\n');
-                let baseFontSize = 60; // Başlangıç font büyüklüğü
-
-                // --- 3.1. Akıllı Ölçekleme (Smart Auto-Scaling) ---
+                let baseFontSize = 60;
                 const diagonal = Math.sqrt(width * width + height * height);
                 const safeZone = diagonal * 0.75;
-
-                // En uzun satırı bul
                 let maxLineWidth = 0;
                 lines.forEach(line => {
                     const w = font.widthOfTextAtSize(line, baseFontSize);
                     if (w > maxLineWidth) maxLineWidth = w;
                 });
-
-                // Eğer en uzun satır güvenli alandan büyükse fontu küçült
                 if (maxLineWidth > safeZone) {
                     const scaleRatio = safeZone / maxLineWidth;
                     baseFontSize = Math.max(10, Math.floor(baseFontSize * scaleRatio));
                 }
-
-                // --- 3.2. Merkezleme ve Koordinat Dönüşümü ---
                 const lineHeight = baseFontSize * 1.2;
-
-                // Block Dimensions (Bounding Box)
-                const blockHeight = lines.length * lineHeight;
-
-                // Dönüş Açısı (45 Derece)
-                const angleRad = Math.PI / 4;
-                const cosTheta = Math.cos(angleRad);
-                const sinTheta = Math.sin(angleRad);
-
-                // Görsel Düzeltme
                 const visualCorrection = (baseFontSize / 3);
-
                 lines.forEach((line, i) => {
                     const lineWidth = font.widthOfTextAtSize(line, baseFontSize);
-
-                    // Local Y: Blok merkezine göre satırın konumu
-                    // Blok merkezi Y=0 kabul edilirse:
-                    // Üst satırlar pozitif Y, alt satırlar negatif Y olmalı.
-                    // i=0 (en üst satır) -> (Lines-1)/2 * LH
                     const lineIndexFromCenter = ((lines.length - 1) / 2) - i;
                     const yLocal = (lineIndexFromCenter * lineHeight) - visualCorrection;
-
-                    // Local X: Satırı kendi içinde ortala
                     const xLocal = -(lineWidth / 2);
-
-                    // Rotasyon
-                    const xRotated = xLocal * cosTheta - yLocal * sinTheta;
-                    const yRotated = xLocal * sinTheta + yLocal * cosTheta;
-
-                    // Taşıma
-                    const finalX = (width / 2) + xRotated;
-                    const finalY = (height / 2) + yRotated;
-
+                    const angleRad = Math.PI / 4;
+                    const xRotated = xLocal * Math.cos(angleRad) - yLocal * Math.sin(angleRad);
+                    const yRotated = xLocal * Math.sin(angleRad) + yLocal * Math.cos(angleRad);
                     page.drawText(line, {
-                        x: finalX,
-                        y: finalY,
-                        size: baseFontSize,
-                        font: font,
-                        color: rgb(0.7, 0.7, 0.7),
-                        opacity: 0.3,
-                        rotate: degrees(45),
+                        x: (width / 2) + xRotated,
+                        y: (height / 2) + yRotated,
+                        size: baseFontSize, font: font, color: rgb(0.7, 0.7, 0.7), opacity: 0.3, rotate: degrees(45)
                     });
                 });
             }
         }
 
-        // --- 6. PREVIEW GENERATION ---
         async function updatePreview() {
             if (!originalPdfBytes || !cachedFontBytes) return;
-
             try {
                 previewLoading.classList.remove('hidden');
-                previewStatus.textContent = "Önizleme oluşturuluyor...";
-
+                previewStatus.textContent = "İşleniyor...";
                 const { PDFDocument, rgb, degrees } = PDFLib;
                 const pdfDoc = await PDFDocument.load(originalPdfBytes);
                 pdfDoc.registerFontkit(window.fontkit);
                 const customFont = await pdfDoc.embedFont(cachedFontBytes);
-
-                const pages = pdfDoc.getPages();
-                const firstPage = pages[0];
-
-                const texts = {
-                    header: document.getElementById('headerText').value,
-                    watermark: document.getElementById('watermarkText').value,
-                    footer: document.getElementById('footerText').value
-                };
-
-                const settings = {
-                    headerFontSize: document.getElementById('headerFontSize').value,
-                    footerFontSize: document.getElementById('footerFontSize').value
-                };
-
-                // Helper fonksiyonu çağır
+                const firstPage = pdfDoc.getPages()[0];
+                const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
+                const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
                 drawOverlay(firstPage, customFont, rgb, degrees, texts, settings);
-
-                // Tek sayfalık PDF üret
                 const singlePagePdf = await PDFDocument.create();
                 const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [0]);
                 singlePagePdf.addPage(copiedPage);
-
                 const pdfBytes = await singlePagePdf.save();
-
-                // Render PDF.js
                 const loadingTask = pdfjsLib.getDocument(pdfBytes);
                 const pdf = await loadingTask.promise;
                 const page = await pdf.getPage(1);
-
-                const containerWidth = canvasContainer.clientWidth || 500;
-                const unscaledViewport = page.getViewport({ scale: 1 });
-                const scale = containerWidth / unscaledViewport.width;
-                const viewport = page.getViewport({ scale: scale });
-
+                const viewport = page.getViewport({ scale: (canvasContainer.clientWidth || 500) / page.getViewport({ scale: 1 }).width });
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-
-                const renderContext = {
-                    canvasContext: canvas.getContext('2d'),
-                    viewport: viewport
-                };
-
-                await page.render(renderContext).promise;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
                 previewStatus.textContent = "Güncel";
-
-            } catch (error) {
-                console.error("Preview hatası:", error);
-                previewStatus.textContent = "Hata!";
-            } finally {
-                previewLoading.classList.add('hidden');
-            }
+            } catch (error) { console.error(error); previewStatus.textContent = "Hata!"; } finally { previewLoading.classList.add('hidden'); }
         }
 
-        // --- 7. FINAL DOWNLOAD ---
         async function processAndDownloadPDF() {
             if (!originalPdfBytes) return;
             const btn = document.getElementById('processBtn');
-            const statusDiv = document.getElementById('status');
-
             try {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
-
+                btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
                 const { PDFDocument, rgb, degrees } = PDFLib;
                 const pdfDoc = await PDFDocument.load(originalPdfBytes);
                 pdfDoc.registerFontkit(window.fontkit);
                 const customFont = await pdfDoc.embedFont(cachedFontBytes);
-
-                const pages = pdfDoc.getPages();
-
-                const texts = {
-                    header: document.getElementById('headerText').value,
-                    watermark: document.getElementById('watermarkText').value,
-                    footer: document.getElementById('footerText').value
-                };
-
-                const settings = {
-                    headerFontSize: document.getElementById('headerFontSize').value,
-                    footerFontSize: document.getElementById('footerFontSize').value
-                };
-
-                // Tüm sayfalara uygula
-                pages.forEach(page => {
-                    drawOverlay(page, customFont, rgb, degrees, texts, settings);
-                });
-
+                const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
+                const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
+                pdfDoc.getPages().forEach(page => drawOverlay(page, customFont, rgb, degrees, texts, settings));
                 const pdfBytes = await pdfDoc.save();
                 const blob = new Blob([pdfBytes], { type: 'application/pdf' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `filigranli_${document.getElementById('fileName').textContent}`;
                 link.click();
+            } catch (err) { console.error(err); alert("İndirme hatası."); } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>PDF\'i İndir</span>'; }
+        }
 
-                statusDiv.textContent = "İndirme başladı!";
-                statusDiv.className = "mt-2 text-green-600 bg-green-100 p-2 rounded";
-                setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+        // ================= MERGER TOOL LOGIC (NEW) =================
+        const mergerDropZone = document.getElementById('dropZoneMerger');
+        const mergerInput = document.getElementById('pdfInputMerger');
+        let mergerFiles = []; // { name: string, file: File, code: string, suffix: string }
+
+        mergerDropZone.addEventListener('dragover', (e) => { e.preventDefault(); mergerDropZone.classList.add('bg-white/30'); });
+        mergerDropZone.addEventListener('dragleave', () => { mergerDropZone.classList.remove('bg-white/30'); });
+        mergerDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            mergerDropZone.classList.remove('bg-white/30');
+            if (e.dataTransfer.files.length) handleMergerFiles(e.dataTransfer.files);
+        });
+        mergerDropZone.addEventListener('click', () => mergerInput.click());
+        mergerInput.addEventListener('change', (e) => { if (e.target.files.length) handleMergerFiles(e.target.files); });
+
+        function handleMergerFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type !== 'application/pdf') return;
+
+                // Parse Name: CODE_SUFFIX.pdf (e.g., ADL201U_A.pdf)
+                const nameParts = file.name.replace('.pdf', '').split('_');
+                let code = file.name, suffix = 'A';
+
+                if (nameParts.length >= 2) {
+                    suffix = nameParts.pop(); // Last part is suffix (A, B, C...)
+                    code = nameParts.join('_'); // Rest is Code
+                }
+
+                // Check duplicate (Simple Name Check)
+                if (!mergerFiles.some(f => f.name === file.name)) {
+                    mergerFiles.push({ name: file.name, file: file, code: code, suffix: suffix });
+                }
+            });
+            renderMergerGroups();
+        }
+
+        function clearMergerList() {
+            mergerFiles = [];
+            renderMergerGroups();
+        }
+
+        function renderMergerGroups() {
+            const container = document.getElementById('groupsContainer');
+            const emptyMsg = document.getElementById('mergerEmpty');
+            const content = document.getElementById('mergerContent');
+
+            if (mergerFiles.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                content.classList.add('hidden');
+                return;
+            }
+
+            emptyMsg.classList.add('hidden');
+            content.classList.remove('hidden');
+            container.innerHTML = '';
+
+            // Group by Code
+            const groups = {};
+            mergerFiles.forEach(item => {
+                if (!groups[item.code]) groups[item.code] = [];
+                groups[item.code].push(item);
+            });
+
+            // Sort logic: A < B < C < D
+            Object.keys(groups).forEach(code => {
+                groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
+            });
+
+            document.getElementById('groupCountBadge').textContent = `${Object.keys(groups).length} Grup`;
+
+            Object.keys(groups).forEach(code => {
+                const groupItems = groups[code];
+                const card = document.createElement('div');
+                card.className = "bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center justify-between";
+
+                let partsHtml = groupItems.map(item =>
+                    `<span class="inline-block bg-white border px-2 py-1 rounded text-xs text-gray-600 mr-1">${item.suffix}</span>`
+                ).join('');
+
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-purple-100 p-2 rounded text-purple-600"><i class="fa-solid fa-folder"></i></div>
+                        <div>
+                            <h4 class="font-bold text-gray-800">${code}</h4>
+                            <div class="mt-1">${partsHtml}</div>
+                        </div>
+                    </div>
+                    <div class="text-right text-xs text-gray-500">
+                        Top. ${groupItems.length} Dosya
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function processMerging() {
+            const btn = document.getElementById('mergeBtn');
+            const status = document.getElementById('mergeStatus');
+
+            if (mergerFiles.length === 0) return;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Birleştiriliyor...';
+                status.textContent = "Dosyalar işleniyor, lütfen bekleyin...";
+
+                const { PDFDocument } = PDFLib;
+                const zip = new JSZip();
+
+                // Group
+                const groups = {};
+                mergerFiles.forEach(item => {
+                    if (!groups[item.code]) groups[item.code] = [];
+                    groups[item.code].push(item);
+                });
+
+                // Process each group
+                const groupKeys = Object.keys(groups);
+
+                // If single group, process directly to PDF blob
+                // If multiple, process to ZIP
+
+                const finalBlobs = [];
+
+                for (const code of groupKeys) {
+                    const groupItems = groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
+
+                    const mergedPdf = await PDFDocument.create();
+
+                    for (const item of groupItems) {
+                        const fileBytes = await item.file.arrayBuffer();
+                        const srcPdf = await PDFDocument.load(fileBytes);
+                        const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+                        copiedPages.forEach(page => mergedPdf.addPage(page));
+                    }
+
+                    const mergedBytes = await mergedPdf.save();
+                    finalBlobs.push({ name: `${code}.pdf`, data: mergedBytes });
+                }
+
+                if (finalBlobs.length === 1) {
+                    // Download Single PDF
+                    const blob = new Blob([finalBlobs[0].data], { type: 'application/pdf' });
+                    downloadBlob(blob, finalBlobs[0].name);
+                    status.textContent = "Tek dosya indirildi!";
+                } else {
+                    // Download ZIP
+                    finalBlobs.forEach(item => {
+                        zip.file(item.name, item.data);
+                    });
+                    const content = await zip.generateAsync({ type: "blob" });
+                    downloadBlob(content, "birlestirilmis_sinavlar.zip");
+                    status.textContent = "Tüm gruplar ZIP olarak indirildi!";
+                }
 
             } catch (err) {
                 console.error(err);
-                alert("İndirme sırasında hata oluştu.");
+                status.textContent = "Hata oluştu: " + err.message;
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>PDF\'i İndir</span>';
+                btn.innerHTML = '<i class="fa-solid fa-bolt"></i> <span>Birleştir ve İndir</span>';
             }
         }
+
+        function downloadBlob(blob, filename) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
     </script>
 </body>
 
