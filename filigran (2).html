@@ -115,6 +115,18 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Font Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Yazı Tipi (Türkçe Karakter
+                                    Destekli)</label>
+                                <select id="fontSelect"
+                                    class="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                                    <option value="DejaVuSans" selected>DejaVu Sans (Tam Uyumlu)</option>
+                                    <option value="Roboto">Roboto</option>
+                                    <option value="NotoSerif">Noto Serif (Tırnaklı)</option>
+                                    <option value="OpenSans">Open Sans</option>
+                                </select>
+                            </div>
                             <hr class="border-gray-100">
                             <div class="space-y-4">
                                 <div>
@@ -124,7 +136,7 @@
                                             Bilgi (Header)</label>
                                         <div class="flex items-center space-x-2"><label
                                                 class="text-xs text-gray-400">Boyut:</label><input type="number"
-                                                id="headerFontSize" value="7" min="6" max="72"
+                                                id="headerFontSize" value="6" min="6" max="72"
                                                 class="w-16 h-6 text-xs border border-gray-300 rounded px-1 text-center outline-none focus:border-blue-500">
                                         </div>
                                     </div>
@@ -147,7 +159,7 @@
                                             Bilgi (Footer)</label>
                                         <div class="flex items-center space-x-2"><label
                                                 class="text-xs text-gray-400">Boyut:</label><input type="number"
-                                                id="footerFontSize" value="7" min="6" max="72"
+                                                id="footerFontSize" value="6" min="6" max="72"
                                                 class="w-16 h-6 text-xs border border-gray-300 rounded px-1 text-center outline-none focus:border-blue-500">
                                         </div>
                                     </div>
@@ -285,6 +297,13 @@
         let pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        const FONT_MAP = {
+            'DejaVuSans': 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf',
+            'Roboto': 'https://fonts.gstatic.com/s/roboto/v50/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTgg3Wlg.ttf',
+            'NotoSerif': 'https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSerif/hinted/ttf/NotoSerif-Regular.ttf',
+            'OpenSans': 'https://raw.githubusercontent.com/edx/edx-fonts/master/open-sans/fonts/Regular/OpenSans-Regular.ttf'
+        };
+
         // DOM Elements (Watermark)
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('pdfInput');
@@ -297,6 +316,7 @@
         const emptyState = document.getElementById('emptyState');
         const previewLoading = document.getElementById('previewLoading');
         const previewStatus = document.getElementById('previewStatus');
+        const fontSelect = document.getElementById('fontSelect');
 
         // Inputs
         const inputs = ['headerText', 'watermarkText', 'footerText', 'headerFontSize', 'footerFontSize'];
@@ -304,22 +324,29 @@
 
         // 1. Initial Load
         window.addEventListener('DOMContentLoaded', () => {
-            ensureFontLoaded();
+            loadFont('DejaVuSans'); // Default to DejaVu Sans for best Turkish support
             switchView('watermark');
         });
 
-        async function ensureFontLoaded() {
-            if (!cachedFontBytes) {
-                previewStatus.textContent = "Font indiriliyor...";
-                try {
-                    const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
-                    cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
-                    previewStatus.textContent = "Hazır";
-                } catch (e) {
-                    console.error("Font error:", e);
-                    alert("Font yüklenemedi. İnternet bağlantınızı kontrol edin.");
-                }
+        async function loadFont(fontName) {
+            previewStatus.textContent = "Font indiriliyor...";
+            cachedFontBytes = null; // Reset cache
+            try {
+                const fontUrl = FONT_MAP[fontName] || FONT_MAP['DejaVuSans'];
+                cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+                previewStatus.textContent = "Hazır";
+                updatePreview(); // Update preview after font load
+            } catch (e) {
+                console.error("Font error:", e);
+                alert("Font yüklenemedi. İnternet bağlantınızı kontrol edin.");
             }
+        }
+
+        // 2. Event Listeners
+        if (fontSelect) {
+            fontSelect.addEventListener('change', (e) => {
+                loadFont(e.target.value);
+            });
         }
 
         // 2. Event Listeners
