@@ -592,7 +592,7 @@
                     pdfDoc.getPages().forEach(page => drawOverlay(page, customFont, rgb, degrees, texts, settings));
 
                     const pdfBytes = await pdfDoc.save();
-                    processedFiles.push({ name: `filigranli_${file.name}`, data: pdfBytes });
+                    processedFiles.push({ name: file.name, data: pdfBytes });
                 }
 
                 if (processedFiles.length === 1) {
