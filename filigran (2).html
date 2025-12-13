@@ -101,10 +101,10 @@
                                 <label class="block text-sm font-medium text-gray-700">PDF Dosyası</label>
                                 <div id="dropZone"
                                     class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-blue-400 hover:bg-gray-50">
-                                    <input type="file" id="pdfInput" accept="application/pdf" class="hidden">
+                                    <input type="file" id="pdfInput" accept="application/pdf" multiple class="hidden">
                                     <div id="uploadText">
                                         <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-                                        <p class="text-sm text-gray-500">Dosyayı buraya sürükleyin</p>
+                                        <p class="text-sm text-gray-500">Dosyaları buraya sürükleyin (Çoklu Seçim)</p>
                                     </div>
                                     <div id="fileInfo"
                                         class="hidden flex items-center justify-center space-x-2 text-blue-600">
@@ -279,22 +279,74 @@
             sidebar.classList.toggle('-translate-x-full');
             sidebar.classList.toggle('absolute'); // Mobile overlay mode if needed
         }
-
-        // ================= WATERMARK TOOL LOGIC (EXISTING) =================
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        let originalPdfBytes = null;
+        // ================= GLOBAL VARIABLES & CONFIG =================
+        let watermarkFiles = [];
         let cachedFontBytes = null;
-        let previewDebounceTimer;
+        let pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        const fileInput = document.getElementById('pdfInput');
+        // DOM Elements (Watermark)
         const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('pdfInput');
+        const uploadText = document.getElementById('uploadText');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const removeFileBtn = document.getElementById('removeFile');
         const canvas = document.getElementById('previewCanvas');
         const canvasContainer = document.getElementById('canvasContainer');
         const emptyState = document.getElementById('emptyState');
         const previewLoading = document.getElementById('previewLoading');
         const previewStatus = document.getElementById('previewStatus');
 
+        // Inputs
         const inputs = ['headerText', 'watermarkText', 'footerText', 'headerFontSize', 'footerFontSize'];
+        let previewDebounceTimer;
+
+        // 1. Initial Load
+        window.addEventListener('DOMContentLoaded', () => {
+            ensureFontLoaded();
+            switchView('watermark');
+        });
+
+        async function ensureFontLoaded() {
+            if (!cachedFontBytes) {
+                previewStatus.textContent = "Font indiriliyor...";
+                try {
+                    const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
+                    cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+                    previewStatus.textContent = "Hazır";
+                } catch (e) {
+                    console.error("Font error:", e);
+                    alert("Font yüklenemedi. İnternet bağlantınızı kontrol edin.");
+                }
+            }
+        }
+
+        // 2. Event Listeners
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-blue-50', 'border-blue-400'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('bg-blue-50', 'border-blue-400'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-blue-50', 'border-blue-400');
+            if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+        });
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFiles(e.target.files); });
+
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            watermarkFiles = [];
+            fileInput.value = '';
+            uploadText.classList.remove('hidden');
+            fileInfo.classList.add('hidden');
+
+            // Clear Canvas
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvasContainer.classList.add('hidden');
+            emptyState.classList.remove('hidden'); // Show empty state back
+            previewStatus.textContent = "Dosya bekleniyor...";
+        });
 
         inputs.forEach(id => {
             document.getElementById(id).addEventListener('input', () => {
@@ -303,58 +355,104 @@
             });
         });
 
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); });
-        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-active'); });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-active');
-            if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
-        });
-        dropZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFileSelect(e.target.files[0]);
-        });
-        document.getElementById('removeFile').addEventListener('click', (e) => {
-            e.stopPropagation();
-            resetApp();
-        });
+        // 3. Handlers
+        async function handleFiles(files) {
+            watermarkFiles = [];
 
-        async function handleFileSelect(file) {
-            if (file.type !== 'application/pdf') { alert("Lütfen geçerli bir PDF dosyası seçin."); return; }
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('uploadText').classList.add('hidden');
-            document.getElementById('fileInfo').classList.remove('hidden');
-            emptyState.classList.add('hidden');
-            canvasContainer.classList.remove('hidden');
-            try {
-                previewLoading.classList.remove('hidden');
-                originalPdfBytes = await file.arrayBuffer();
-                await ensureFontLoaded();
-                await updatePreview();
-            } catch (err) { console.error(err); alert("Dosya yüklenirken hata oluştu."); } finally { previewLoading.classList.add('hidden'); }
-        }
+            for (const file of files) {
+                if (file.type === 'application/pdf') {
+                    const buffer = await file.arrayBuffer();
+                    watermarkFiles.push({ name: file.name, data: buffer });
+                }
+            }
 
-        function resetApp() {
-            fileInput.value = '';
-            originalPdfBytes = null;
-            document.getElementById('uploadText').classList.remove('hidden');
-            document.getElementById('fileInfo').classList.add('hidden');
-            emptyState.classList.remove('hidden');
-            canvasContainer.classList.add('hidden');
-            inputs.forEach(id => document.getElementById(id).value = '');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+            if (watermarkFiles.length > 0) {
+                uploadText.classList.add('hidden');
+                fileInfo.classList.remove('hidden');
 
-        async function ensureFontLoaded() {
-            if (!cachedFontBytes) {
-                previewStatus.textContent = "Font indiriliyor...";
-                try {
-                    const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
-                    cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
-                } catch (e) { console.error("Font error:", e); alert("Font yüklenemedi."); }
+                if (watermarkFiles.length === 1) {
+                    fileName.textContent = watermarkFiles[0].name;
+                } else {
+                    fileName.textContent = `${watermarkFiles.length} dosya seçildi`;
+                }
+
+                // SHOW CANVAS, HIDE EMPTY STATE
+                if (canvasContainer && emptyState) {
+                    canvasContainer.classList.remove('hidden');
+                    emptyState.classList.add('hidden');
+                } else {
+                    console.error("CanvasContainer or EmptyState not found!");
+                }
+
+                updatePreview();
             }
         }
+
+        // ================= WATERMARK TOOL LOGIC (EXISTING) =================
+        // let originalPdfBytes = null; // Replaced by watermarkFiles
+        // let cachedFontBytes = null; // Moved
+        // const fileInput = document.getElementById('pdfInput'); // Moved
+        // const dropZone = document.getElementById('dropZone'); // Moved
+        // const canvas = document.getElementById('previewCanvas');
+        // const canvasContainer = document.getElementById('canvasContainer');
+        // const emptyState = document.getElementById('emptyState');
+        // const previewLoading = document.getElementById('previewLoading');
+        // const previewStatus = document.getElementById('previewStatus');
+
+        // const inputs = ['headerText', 'watermarkText', 'footerText', 'headerFontSize', 'footerFontSize'];
+
+        // dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); }); // Moved
+        // dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-active'); }); // Moved
+        // dropZone.addEventListener('drop', (e) => { // Moved
+        //     e.preventDefault();
+        //     dropZone.classList.remove('drag-active');
+        //     if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
+        // });
+        // dropZone.addEventListener('click', () => fileInput.click()); // Moved
+        // fileInput.addEventListener('change', (e) => { // Moved
+        //     if (e.target.files.length) handleFileSelect(e.target.files[0]);
+        // });
+        // document.getElementById('removeFile').addEventListener('click', (e) => { // Moved
+        //     e.stopPropagation();
+        //     resetApp();
+        // });
+
+        // async function handleFileSelect(file) {
+        //     if (file.type !== 'application/pdf') { alert("Lütfen geçerli bir PDF dosyası seçin."); return; }
+        //     document.getElementById('fileName').textContent = file.name;
+        //     document.getElementById('uploadText').classList.add('hidden');
+        //     document.getElementById('fileInfo').classList.remove('hidden');
+        //     emptyState.classList.add('hidden');
+        //     canvasContainer.classList.remove('hidden');
+        //     try {
+        //         previewLoading.classList.remove('hidden');
+        //         // originalPdfBytes = await file.arrayBuffer(); // Replaced by watermarkFiles
+        //         await ensureFontLoaded();
+        //         await updatePreview();
+        //     } catch (err) { console.error(err); alert("Dosya yüklenirken hata oluştu."); } finally { previewLoading.classList.add('hidden'); }
+        // }
+
+        // function resetApp() {
+        //     fileInput.value = '';
+        //     originalPdfBytes = null;
+        //     document.getElementById('uploadText').classList.remove('hidden');
+        //     document.getElementById('fileInfo').classList.add('hidden');
+        //     emptyState.classList.remove('hidden');
+        //     canvasContainer.classList.add('hidden');
+        //     inputs.forEach(id => document.getElementById(id).value = '');
+        //     const ctx = canvas.getContext('2d');
+        //     ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // }
+
+        // async function ensureFontLoaded() {
+        //     if (!cachedFontBytes) {
+        //         previewStatus.textContent = "Font indiriliyor...";
+        //         try {
+        //             const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
+        //             cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+        //         } catch (e) { console.error("Font error:", e); alert("Font yüklenemedi."); }
+        //     }
+        // }
 
         function wrapText(text, font, fontSize, maxWidth) {
             if (!text) return [];
@@ -441,12 +539,14 @@
         }
 
         async function updatePreview() {
-            if (!originalPdfBytes || !cachedFontBytes) return;
+            if (watermarkFiles.length === 0 || !cachedFontBytes) return;
             try {
                 previewLoading.classList.remove('hidden');
                 previewStatus.textContent = "İşleniyor...";
                 const { PDFDocument, rgb, degrees } = PDFLib;
-                const pdfDoc = await PDFDocument.load(originalPdfBytes);
+
+                // Use first file for preview
+                const pdfDoc = await PDFDocument.load(watermarkFiles[0].data);
                 pdfDoc.registerFontkit(window.fontkit);
                 const customFont = await pdfDoc.embedFont(cachedFontBytes);
                 const firstPage = pdfDoc.getPages()[0];
@@ -469,24 +569,55 @@
         }
 
         async function processAndDownloadPDF() {
-            if (!originalPdfBytes) return;
+            if (watermarkFiles.length === 0) return;
             const btn = document.getElementById('processBtn');
             try {
-                btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
+
                 const { PDFDocument, rgb, degrees } = PDFLib;
-                const pdfDoc = await PDFDocument.load(originalPdfBytes);
-                pdfDoc.registerFontkit(window.fontkit);
-                const customFont = await pdfDoc.embedFont(cachedFontBytes);
+                const zip = new JSZip();
+
+                // Get settings once
                 const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
                 const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
-                pdfDoc.getPages().forEach(page => drawOverlay(page, customFont, rgb, degrees, texts, settings));
-                const pdfBytes = await pdfDoc.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `filigranli_${document.getElementById('fileName').textContent}`;
-                link.click();
-            } catch (err) { console.error(err); alert("İndirme hatası."); } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>PDF\'i İndir</span>'; }
+
+                const processedFiles = [];
+
+                for (const file of watermarkFiles) {
+                    const pdfDoc = await PDFDocument.load(file.data);
+                    pdfDoc.registerFontkit(window.fontkit);
+                    const customFont = await pdfDoc.embedFont(cachedFontBytes);
+
+                    pdfDoc.getPages().forEach(page => drawOverlay(page, customFont, rgb, degrees, texts, settings));
+
+                    const pdfBytes = await pdfDoc.save();
+                    processedFiles.push({ name: `filigranli_${file.name}`, data: pdfBytes });
+                }
+
+                if (processedFiles.length === 1) {
+                    // Single File Download
+                    const blob = new Blob([processedFiles[0].data], { type: 'application/pdf' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = processedFiles[0].name;
+                    link.click();
+                } else {
+                    // ZIP Download
+                    processedFiles.forEach(f => {
+                        zip.file(f.name, f.data);
+                    });
+                    const content = await zip.generateAsync({ type: "blob" });
+                    downloadBlob(content, "filigranli_dosyalar.zip");
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("İşlem sırasında hata oluştu: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>PDF\'i İndir</span>';
+            }
         }
 
         // ================= MERGER TOOL LOGIC (NEW) =================
