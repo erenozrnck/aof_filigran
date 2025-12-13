@@ -64,6 +64,11 @@
                 <i class="fa-solid fa-object-group w-8 text-center"></i>
                 <span class="font-medium">PDF Birleştir</span>
             </button>
+            <button id="nav-auto" onclick="switchView('auto')"
+                class="w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center">
+                <i class="fa-solid fa-wand-magic-sparkles w-8 text-center"></i>
+                <span class="font-medium">Otomatik</span>
+            </button>
         </nav>
 
         <div class="p-4 border-t border-gray-800 text-xs text-center text-gray-500">
@@ -274,6 +279,67 @@
                 </div>
             </div>
 
+            <!-- ============================== VIEW 3: AUTOMATIC TOOL ============================== -->
+            <div id="view-auto" class="view-section hidden transition-opacity duration-300">
+                <div class="w-full max-w-4xl mb-6 text-center mx-auto">
+                    <h1 class="text-3xl font-bold text-gray-800"><i
+                            class="fa-solid fa-wand-magic-sparkles text-pink-600 mr-2"></i>Otomatik İşlem Merkezi</h1>
+                    <p class="text-gray-500 mt-1">Dosyaları birleştirir VE mevcut filigran ayarlarını (Sol menüdeki)
+                        uygulayarak tek seferde çıktı verir.</p>
+                </div>
+
+                <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <div class="bg-pink-600 p-6 text-white text-center">
+                        <div id="dropZoneAuto"
+                            class="border-2 border-dashed border-white/40 bg-white/10 rounded-xl p-8 cursor-pointer transition-all hover:bg-white/20">
+                            <input type="file" id="pdfInputAuto" accept="application/pdf" multiple class="hidden">
+                            <i class="fa-solid fa-folder-plus text-4xl mb-3"></i>
+                            <h3 class="text-lg font-bold">Dosyaları Buraya Sürükleyin veya Seçin</h3>
+                            <p class="text-sm opacity-80 mt-2">Çoklu şeçim (Örn: ADL201U_A.pdf, ADL201U_B.pdf...)</p>
+                        </div>
+                    </div>
+
+                    <div id="autoContent" class="p-6 hidden">
+                        <!-- Batch Rename Toolbar for Auto -->
+                        <div
+                            class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 flex flex-col md:flex-row items-center gap-3">
+                            <div class="text-sm font-bold text-gray-600 whitespace-nowrap"><i
+                                    class="fa-solid fa-pen-to-square"></i> Toplu İsim Değiştir:</div>
+                            <input type="text" id="findTextAuto" placeholder="Aranan (Örn: U)"
+                                class="flex-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-pink-500 outline-none">
+                            <input type="text" id="replaceTextAuto" placeholder="Yeni (Örn: -guz-AS)"
+                                class="flex-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-pink-500 outline-none">
+                            <button onclick="applyBatchRenameAuto()"
+                                class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-1.5 rounded transition">Uygula</button>
+                        </div>
+
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-700">Bulunan Ders Grupları</h3>
+                            <span id="groupCountBadgeAuto"
+                                class="bg-pink-100 text-pink-800 text-xs font-bold px-2 py-1 rounded-full">0
+                                Grup</span>
+                        </div>
+
+                        <div id="autoGroupsContainer" class="space-y-4 mb-6">
+                            <!-- JS ile doldurulacak -->
+                        </div>
+
+                        <button id="autoProcessBtn" onclick="processAuto()"
+                            class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Birleştir ve Filigran Ekle</span>
+                        </button>
+                        <div id="autoStatus" class="mt-4 text-center text-sm font-medium text-gray-600"></div>
+                    </div>
+
+                    <!-- Initial State Message -->
+                    <div id="autoEmpty" class="p-12 text-center text-gray-400">
+                        <i class="fa-solid fa-layer-group text-5xl mb-4 opacity-20"></i>
+                        <p>Henüz dosya seçilmedi.</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -287,16 +353,19 @@
             // Reset Nav Styles
             document.getElementById('nav-watermark').className = "w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center";
             document.getElementById('nav-merger').className = "w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center";
+            document.getElementById('nav-auto').className = "w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center";
 
             // Show Active
             document.getElementById('view-' + viewName).classList.remove('hidden');
 
             // Set Active Nav Style
-            const activeClass = "w-full text-left py-3 px-4 rounded-lg bg-blue-600 text-white shadow-lg transition-all hover:bg-blue-700 flex items-center";
+            const blueClass = "w-full text-left py-3 px-4 rounded-lg bg-blue-600 text-white shadow-lg transition-all hover:bg-blue-700 flex items-center";
             const purpleClass = "w-full text-left py-3 px-4 rounded-lg bg-purple-600 text-white shadow-lg transition-all hover:bg-purple-700 flex items-center";
+            const pinkClass = "w-full text-left py-3 px-4 rounded-lg bg-pink-600 text-white shadow-lg transition-all hover:bg-pink-700 flex items-center";
 
-            if (viewName === 'watermark') document.getElementById('nav-watermark').className = activeClass;
+            if (viewName === 'watermark') document.getElementById('nav-watermark').className = blueClass;
             if (viewName === 'merger') document.getElementById('nav-merger').className = purpleClass;
+            if (viewName === 'auto') document.getElementById('nav-auto').className = pinkClass;
         }
 
         function toggleSidebarInternal() {
@@ -373,412 +442,412 @@
         if (mainFontSelect) mainFontSelect.addEventListener('change', loadFonts);
         if (watermarkFontSelect) watermarkFontSelect.addEventListener('change', loadFonts);
 
-            // 2. Event Listeners
-            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-blue-50', 'border-blue-400'); });
-            dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('bg-blue-50', 'border-blue-400'); });
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('bg-blue-50', 'border-blue-400');
-                if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+        // 2. Event Listeners
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-blue-50', 'border-blue-400'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('bg-blue-50', 'border-blue-400'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-blue-50', 'border-blue-400');
+            if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+        });
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFiles(e.target.files); });
+
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            watermarkFiles = [];
+            fileInput.value = '';
+            uploadText.classList.remove('hidden');
+            fileInfo.classList.add('hidden');
+
+            // Clear Canvas
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvasContainer.classList.add('hidden');
+            emptyState.classList.remove('hidden'); // Show empty state back
+            previewStatus.textContent = "Dosya bekleniyor...";
+        });
+
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                clearTimeout(previewDebounceTimer);
+                previewDebounceTimer = setTimeout(updatePreview, 600);
             });
-            dropZone.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFiles(e.target.files); });
+        });
 
-            removeFileBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                watermarkFiles = [];
-                fileInput.value = '';
-                uploadText.classList.remove('hidden');
-                fileInfo.classList.add('hidden');
+        // 3. Handlers
+        async function handleFiles(files) {
+            watermarkFiles = [];
 
-                // Clear Canvas
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                canvasContainer.classList.add('hidden');
-                emptyState.classList.remove('hidden'); // Show empty state back
-                previewStatus.textContent = "Dosya bekleniyor...";
-            });
+            for (const file of files) {
+                if (file.type === 'application/pdf') {
+                    const buffer = await file.arrayBuffer();
+                    watermarkFiles.push({ name: file.name, data: buffer });
+                }
+            }
 
-            inputs.forEach(id => {
-                document.getElementById(id).addEventListener('input', () => {
-                    clearTimeout(previewDebounceTimer);
-                    previewDebounceTimer = setTimeout(updatePreview, 600);
+            if (watermarkFiles.length > 0) {
+                uploadText.classList.add('hidden');
+                fileInfo.classList.remove('hidden');
+
+                if (watermarkFiles.length === 1) {
+                    fileName.textContent = watermarkFiles[0].name;
+                } else {
+                    fileName.textContent = `${watermarkFiles.length} dosya seçildi`;
+                }
+
+                // SHOW CANVAS, HIDE EMPTY STATE
+                if (canvasContainer && emptyState) {
+                    canvasContainer.classList.remove('hidden');
+                    emptyState.classList.add('hidden');
+                } else {
+                    console.error("CanvasContainer or EmptyState not found!");
+                }
+
+                updatePreview();
+            }
+        }
+
+        // ================= WATERMARK TOOL LOGIC (EXISTING) =================
+        // let originalPdfBytes = null; // Replaced by watermarkFiles
+        // let cachedFontBytes = null; // Moved
+        // const fileInput = document.getElementById('pdfInput'); // Moved
+        // const dropZone = document.getElementById('dropZone'); // Moved
+        // const canvas = document.getElementById('previewCanvas');
+        // const canvasContainer = document.getElementById('canvasContainer');
+        // const emptyState = document.getElementById('emptyState');
+        // const previewLoading = document.getElementById('previewLoading');
+        // const previewStatus = document.getElementById('previewStatus');
+
+        // const inputs = ['headerText', 'watermarkText', 'footerText', 'headerFontSize', 'footerFontSize'];
+
+        // dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); }); // Moved
+        // dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-active'); }); // Moved
+        // dropZone.addEventListener('drop', (e) => { // Moved
+        //     e.preventDefault();
+        //     dropZone.classList.remove('drag-active');
+        //     if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
+        // });
+        // dropZone.addEventListener('click', () => fileInput.click()); // Moved
+        // fileInput.addEventListener('change', (e) => { // Moved
+        //     if (e.target.files.length) handleFileSelect(e.target.files[0]);
+        // });
+        // document.getElementById('removeFile').addEventListener('click', (e) => { // Moved
+        //     e.stopPropagation();
+        //     resetApp();
+        // });
+
+        // async function handleFileSelect(file) {
+        //     if (file.type !== 'application/pdf') { alert("Lütfen geçerli bir PDF dosyası seçin."); return; }
+        //     document.getElementById('fileName').textContent = file.name;
+        //     document.getElementById('uploadText').classList.add('hidden');
+        //     document.getElementById('fileInfo').classList.remove('hidden');
+        //     emptyState.classList.add('hidden');
+        //     canvasContainer.classList.remove('hidden');
+        //     try {
+        //         previewLoading.classList.remove('hidden');
+        //         // originalPdfBytes = await file.arrayBuffer(); // Replaced by watermarkFiles
+        //         await ensureFontLoaded();
+        //         await updatePreview();
+        //     } catch (err) { console.error(err); alert("Dosya yüklenirken hata oluştu."); } finally { previewLoading.classList.add('hidden'); }
+        // }
+
+        // function resetApp() {
+        //     fileInput.value = '';
+        //     originalPdfBytes = null;
+        //     document.getElementById('uploadText').classList.remove('hidden');
+        //     document.getElementById('fileInfo').classList.add('hidden');
+        //     emptyState.classList.remove('hidden');
+        //     canvasContainer.classList.add('hidden');
+        //     inputs.forEach(id => document.getElementById(id).value = '');
+        //     const ctx = canvas.getContext('2d');
+        //     ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // }
+
+        // async function ensureFontLoaded() {
+        //     if (!cachedFontBytes) {
+        //         previewStatus.textContent = "Font indiriliyor...";
+        //         try {
+        //             const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
+        //             cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+        //         } catch (e) { console.error("Font error:", e); alert("Font yüklenemedi."); }
+        //     }
+        // }
+
+        function wrapText(text, font, fontSize, maxWidth) {
+            if (!text) return [];
+            const paragraphs = text.split('\n');
+            let lines = [];
+            paragraphs.forEach(paragraph => {
+                const words = paragraph.split(' ');
+                let currentLine = '';
+                words.forEach(word => {
+                    const testLine = currentLine ? currentLine + ' ' + word : word;
+                    const width = font.widthOfTextAtSize(testLine, fontSize);
+                    if (width < maxWidth) currentLine = testLine;
+                    else { if (currentLine) lines.push(currentLine); currentLine = word; }
                 });
+                if (currentLine) lines.push(currentLine);
             });
+            return lines;
+        }
 
-            // 3. Handlers
-            async function handleFiles(files) {
-                watermarkFiles = [];
+        function drawOverlay(page, fonts, rgb, degrees, texts, settings) {
+            const fontMain = fonts.main;
+            const fontWatermark = fonts.watermark;
 
-                for (const file of files) {
-                    if (file.type === 'application/pdf') {
-                        const buffer = await file.arrayBuffer();
-                        watermarkFiles.push({ name: file.name, data: buffer });
-                    }
-                }
+            const { width, height } = page.getSize();
+            const margin = 40;
+            const maxWidth = width - (margin * 2);
 
-                if (watermarkFiles.length > 0) {
-                    uploadText.classList.add('hidden');
-                    fileInfo.classList.remove('hidden');
-
-                    if (watermarkFiles.length === 1) {
-                        fileName.textContent = watermarkFiles[0].name;
-                    } else {
-                        fileName.textContent = `${watermarkFiles.length} dosya seçildi`;
-                    }
-
-                    // SHOW CANVAS, HIDE EMPTY STATE
-                    if (canvasContainer && emptyState) {
-                        canvasContainer.classList.remove('hidden');
-                        emptyState.classList.add('hidden');
-                    } else {
-                        console.error("CanvasContainer or EmptyState not found!");
-                    }
-
-                    updatePreview();
-                }
-            }
-
-            // ================= WATERMARK TOOL LOGIC (EXISTING) =================
-            // let originalPdfBytes = null; // Replaced by watermarkFiles
-            // let cachedFontBytes = null; // Moved
-            // const fileInput = document.getElementById('pdfInput'); // Moved
-            // const dropZone = document.getElementById('dropZone'); // Moved
-            // const canvas = document.getElementById('previewCanvas');
-            // const canvasContainer = document.getElementById('canvasContainer');
-            // const emptyState = document.getElementById('emptyState');
-            // const previewLoading = document.getElementById('previewLoading');
-            // const previewStatus = document.getElementById('previewStatus');
-
-            // const inputs = ['headerText', 'watermarkText', 'footerText', 'headerFontSize', 'footerFontSize'];
-
-            // dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); }); // Moved
-            // dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-active'); }); // Moved
-            // dropZone.addEventListener('drop', (e) => { // Moved
-            //     e.preventDefault();
-            //     dropZone.classList.remove('drag-active');
-            //     if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
-            // });
-            // dropZone.addEventListener('click', () => fileInput.click()); // Moved
-            // fileInput.addEventListener('change', (e) => { // Moved
-            //     if (e.target.files.length) handleFileSelect(e.target.files[0]);
-            // });
-            // document.getElementById('removeFile').addEventListener('click', (e) => { // Moved
-            //     e.stopPropagation();
-            //     resetApp();
-            // });
-
-            // async function handleFileSelect(file) {
-            //     if (file.type !== 'application/pdf') { alert("Lütfen geçerli bir PDF dosyası seçin."); return; }
-            //     document.getElementById('fileName').textContent = file.name;
-            //     document.getElementById('uploadText').classList.add('hidden');
-            //     document.getElementById('fileInfo').classList.remove('hidden');
-            //     emptyState.classList.add('hidden');
-            //     canvasContainer.classList.remove('hidden');
-            //     try {
-            //         previewLoading.classList.remove('hidden');
-            //         // originalPdfBytes = await file.arrayBuffer(); // Replaced by watermarkFiles
-            //         await ensureFontLoaded();
-            //         await updatePreview();
-            //     } catch (err) { console.error(err); alert("Dosya yüklenirken hata oluştu."); } finally { previewLoading.classList.add('hidden'); }
-            // }
-
-            // function resetApp() {
-            //     fileInput.value = '';
-            //     originalPdfBytes = null;
-            //     document.getElementById('uploadText').classList.remove('hidden');
-            //     document.getElementById('fileInfo').classList.add('hidden');
-            //     emptyState.classList.remove('hidden');
-            //     canvasContainer.classList.add('hidden');
-            //     inputs.forEach(id => document.getElementById(id).value = '');
-            //     const ctx = canvas.getContext('2d');
-            //     ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // }
-
-            // async function ensureFontLoaded() {
-            //     if (!cachedFontBytes) {
-            //         previewStatus.textContent = "Font indiriliyor...";
-            //         try {
-            //             const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
-            //             cachedFontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
-            //         } catch (e) { console.error("Font error:", e); alert("Font yüklenemedi."); }
-            //     }
-            // }
-
-            function wrapText(text, font, fontSize, maxWidth) {
-                if (!text) return [];
-                const paragraphs = text.split('\n');
-                let lines = [];
-                paragraphs.forEach(paragraph => {
-                    const words = paragraph.split(' ');
-                    let currentLine = '';
-                    words.forEach(word => {
-                        const testLine = currentLine ? currentLine + ' ' + word : word;
-                        const width = font.widthOfTextAtSize(testLine, fontSize);
-                        if (width < maxWidth) currentLine = testLine;
-                        else { if (currentLine) lines.push(currentLine); currentLine = word; }
-                    });
-                    if (currentLine) lines.push(currentLine);
+            if (texts.header) {
+                const fontSize = parseInt(settings.headerFontSize) || 7;
+                const lineHeight = fontSize * 1.3;
+                const lines = wrapText(texts.header, fontMain, fontSize, maxWidth);
+                const isMultiLine = lines.length > 1;
+                lines.forEach((line, i) => {
+                    const textWidth = fontMain.widthOfTextAtSize(line, fontSize);
+                    let xPos = isMultiLine ? margin : (width / 2) - (textWidth / 2);
+                    page.drawText(line, { x: xPos, y: height - 30 - (i * lineHeight), size: fontSize, font: fontMain, color: rgb(0, 0, 0) });
                 });
-                return lines;
             }
 
-            function drawOverlay(page, fonts, rgb, degrees, texts, settings) {
-                const fontMain = fonts.main;
-                const fontWatermark = fonts.watermark;
-
-                const { width, height } = page.getSize();
-                const margin = 40;
-                const maxWidth = width - (margin * 2);
-
-                if (texts.header) {
-                    const fontSize = parseInt(settings.headerFontSize) || 7;
-                    const lineHeight = fontSize * 1.3;
-                    const lines = wrapText(texts.header, fontMain, fontSize, maxWidth);
-                    const isMultiLine = lines.length > 1;
-                    lines.forEach((line, i) => {
-                        const textWidth = fontMain.widthOfTextAtSize(line, fontSize);
-                        let xPos = isMultiLine ? margin : (width / 2) - (textWidth / 2);
-                        page.drawText(line, { x: xPos, y: height - 30 - (i * lineHeight), size: fontSize, font: fontMain, color: rgb(0, 0, 0) });
-                    });
-                }
-
-                if (texts.footer) {
-                    const fontSize = parseInt(settings.footerFontSize) || 7;
-                    const lineHeight = fontSize * 1.3;
-                    const lines = wrapText(texts.footer, fontMain, fontSize, maxWidth);
-                    const isMultiLine = lines.length > 1;
-                    const footerBottomMargin = 15;
-                    lines.forEach((line, i) => {
-                        const textWidth = fontMain.widthOfTextAtSize(line, fontSize);
-                        let xPos = isMultiLine ? margin : (width / 2) - (textWidth / 2);
-                        const lineY = footerBottomMargin + ((lines.length - 1 - i) * lineHeight);
-                        page.drawText(line, { x: xPos, y: lineY, size: fontSize, font: fontMain, color: rgb(0, 0, 0) });
-                    });
-                }
-
-                if (texts.watermark) {
-                    const effectiveText = texts.watermark.replace(/\s+$/, '');
-                    if (!effectiveText) return;
-                    const lines = effectiveText.split('\n');
-                    let baseFontSize = 60;
-                    const diagonal = Math.sqrt(width * width + height * height);
-                    const safeZone = diagonal * 0.75;
-                    let maxLineWidth = 0;
-                    lines.forEach(line => {
-                        const w = fontWatermark.widthOfTextAtSize(line, baseFontSize);
-                        if (w > maxLineWidth) maxLineWidth = w;
-                    });
-                    if (maxLineWidth > safeZone) {
-                        const scaleRatio = safeZone / maxLineWidth;
-                        baseFontSize = Math.max(10, Math.floor(baseFontSize * scaleRatio));
-                    }
-                    const lineHeight = baseFontSize * 1.2;
-                    const visualCorrection = (baseFontSize / 3);
-                    lines.forEach((line, i) => {
-                        const lineWidth = fontWatermark.widthOfTextAtSize(line, baseFontSize);
-                        const lineIndexFromCenter = ((lines.length - 1) / 2) - i;
-                        const yLocal = (lineIndexFromCenter * lineHeight) - visualCorrection;
-                        const xLocal = -(lineWidth / 2);
-                        const angleRad = Math.PI / 4;
-                        const xRotated = xLocal * Math.cos(angleRad) - yLocal * Math.sin(angleRad);
-                        const yRotated = xLocal * Math.sin(angleRad) + yLocal * Math.cos(angleRad);
-                        page.drawText(line, {
-                            x: (width / 2) + xRotated,
-                            y: (height / 2) + yRotated,
-                            size: baseFontSize, font: fontWatermark, color: rgb(0.8, 0.8, 0.8), opacity: 0.25, rotate: degrees(45)
-                        });
-                    });
-                }
+            if (texts.footer) {
+                const fontSize = parseInt(settings.footerFontSize) || 7;
+                const lineHeight = fontSize * 1.3;
+                const lines = wrapText(texts.footer, fontMain, fontSize, maxWidth);
+                const isMultiLine = lines.length > 1;
+                const footerBottomMargin = 15;
+                lines.forEach((line, i) => {
+                    const textWidth = fontMain.widthOfTextAtSize(line, fontSize);
+                    let xPos = isMultiLine ? margin : (width / 2) - (textWidth / 2);
+                    const lineY = footerBottomMargin + ((lines.length - 1 - i) * lineHeight);
+                    page.drawText(line, { x: xPos, y: lineY, size: fontSize, font: fontMain, color: rgb(0, 0, 0) });
+                });
             }
 
-            async function updatePreview() {
-                if (watermarkFiles.length === 0 || !cachedMainFontBytes || !cachedWatermarkFontBytes) return;
-                try {
-                    previewLoading.classList.remove('hidden');
-                    previewStatus.textContent = "İşleniyor...";
-                    const { PDFDocument, rgb, degrees } = PDFLib;
+            if (texts.watermark) {
+                const effectiveText = texts.watermark.replace(/\s+$/, '');
+                if (!effectiveText) return;
+                const lines = effectiveText.split('\n');
+                let baseFontSize = 60;
+                const diagonal = Math.sqrt(width * width + height * height);
+                const safeZone = diagonal * 0.75;
+                let maxLineWidth = 0;
+                lines.forEach(line => {
+                    const w = fontWatermark.widthOfTextAtSize(line, baseFontSize);
+                    if (w > maxLineWidth) maxLineWidth = w;
+                });
+                if (maxLineWidth > safeZone) {
+                    const scaleRatio = safeZone / maxLineWidth;
+                    baseFontSize = Math.max(10, Math.floor(baseFontSize * scaleRatio));
+                }
+                const lineHeight = baseFontSize * 1.2;
+                const visualCorrection = (baseFontSize / 3);
+                lines.forEach((line, i) => {
+                    const lineWidth = fontWatermark.widthOfTextAtSize(line, baseFontSize);
+                    const lineIndexFromCenter = ((lines.length - 1) / 2) - i;
+                    const yLocal = (lineIndexFromCenter * lineHeight) - visualCorrection;
+                    const xLocal = -(lineWidth / 2);
+                    const angleRad = Math.PI / 4;
+                    const xRotated = xLocal * Math.cos(angleRad) - yLocal * Math.sin(angleRad);
+                    const yRotated = xLocal * Math.sin(angleRad) + yLocal * Math.cos(angleRad);
+                    page.drawText(line, {
+                        x: (width / 2) + xRotated,
+                        y: (height / 2) + yRotated,
+                        size: baseFontSize, font: fontWatermark, color: rgb(0.8, 0.8, 0.8), opacity: 0.25, rotate: degrees(45)
+                    });
+                });
+            }
+        }
 
-                    // Use first file for preview
-                    const pdfDoc = await PDFDocument.load(watermarkFiles[0].data);
+        async function updatePreview() {
+            if (watermarkFiles.length === 0 || !cachedMainFontBytes || !cachedWatermarkFontBytes) return;
+            try {
+                previewLoading.classList.remove('hidden');
+                previewStatus.textContent = "İşleniyor...";
+                const { PDFDocument, rgb, degrees } = PDFLib;
+
+                // Use first file for preview
+                const pdfDoc = await PDFDocument.load(watermarkFiles[0].data);
+                pdfDoc.registerFontkit(window.fontkit);
+
+                const fMain = await pdfDoc.embedFont(cachedMainFontBytes);
+                const fWm = await pdfDoc.embedFont(cachedWatermarkFontBytes);
+                const customFonts = { main: fMain, watermark: fWm };
+
+                const firstPage = pdfDoc.getPages()[0];
+                const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
+                const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
+                drawOverlay(firstPage, customFonts, rgb, degrees, texts, settings);
+                const singlePagePdf = await PDFDocument.create();
+                const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [0]);
+                singlePagePdf.addPage(copiedPage);
+                const pdfBytes = await singlePagePdf.save();
+                const loadingTask = pdfjsLib.getDocument(pdfBytes);
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({ scale: (canvasContainer.clientWidth || 500) / page.getViewport({ scale: 1 }).width });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                previewStatus.textContent = "Güncel";
+            } catch (error) { console.error(error); previewStatus.textContent = "Hata!"; } finally { previewLoading.classList.add('hidden'); }
+        }
+
+        async function processAndDownloadPDF() {
+            if (watermarkFiles.length === 0) return;
+            const btn = document.getElementById('processBtn');
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
+
+                const { PDFDocument, rgb, degrees } = PDFLib;
+                const zip = new JSZip();
+
+                // Get settings once
+                const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
+                const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
+
+                const processedFiles = [];
+
+                for (const file of watermarkFiles) {
+                    const pdfDoc = await PDFLib.PDFDocument.load(file.data);
                     pdfDoc.registerFontkit(window.fontkit);
+
+                    if (!cachedMainFontBytes || !cachedWatermarkFontBytes) {
+                        throw new Error("Font verisi eksik. Sayfayı yenileyin.");
+                    }
+
+                    // console.log("Font Types:", typeof cachedFontBytes.regular, typeof cachedFontBytes.bold);
 
                     const fMain = await pdfDoc.embedFont(cachedMainFontBytes);
                     const fWm = await pdfDoc.embedFont(cachedWatermarkFontBytes);
                     const customFonts = { main: fMain, watermark: fWm };
 
-                    const firstPage = pdfDoc.getPages()[0];
-                    const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
-                    const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
-                    drawOverlay(firstPage, customFonts, rgb, degrees, texts, settings);
-                    const singlePagePdf = await PDFDocument.create();
-                    const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [0]);
-                    singlePagePdf.addPage(copiedPage);
-                    const pdfBytes = await singlePagePdf.save();
-                    const loadingTask = pdfjsLib.getDocument(pdfBytes);
-                    const pdf = await loadingTask.promise;
-                    const page = await pdf.getPage(1);
-                    const viewport = page.getViewport({ scale: (canvasContainer.clientWidth || 500) / page.getViewport({ scale: 1 }).width });
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
-                    previewStatus.textContent = "Güncel";
-                } catch (error) { console.error(error); previewStatus.textContent = "Hata!"; } finally { previewLoading.classList.add('hidden'); }
-            }
+                    pdfDoc.getPages().forEach(page => drawOverlay(page, customFonts, rgb, degrees, texts, settings));
 
-            async function processAndDownloadPDF() {
-                if (watermarkFiles.length === 0) return;
-                const btn = document.getElementById('processBtn');
-                try {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
-
-                    const { PDFDocument, rgb, degrees } = PDFLib;
-                    const zip = new JSZip();
-
-                    // Get settings once
-                    const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
-                    const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
-
-                    const processedFiles = [];
-
-                    for (const file of watermarkFiles) {
-                        const pdfDoc = await PDFLib.PDFDocument.load(file.data);
-                        pdfDoc.registerFontkit(window.fontkit);
-
-                        if (!cachedMainFontBytes || !cachedWatermarkFontBytes) {
-                            throw new Error("Font verisi eksik. Sayfayı yenileyin.");
-                        }
-
-                        // console.log("Font Types:", typeof cachedFontBytes.regular, typeof cachedFontBytes.bold);
-
-                        const fMain = await pdfDoc.embedFont(cachedMainFontBytes);
-                        const fWm = await pdfDoc.embedFont(cachedWatermarkFontBytes);
-                        const customFonts = { main: fMain, watermark: fWm };
-
-                        pdfDoc.getPages().forEach(page => drawOverlay(page, customFonts, rgb, degrees, texts, settings));
-
-                        const pdfBytes = await pdfDoc.save();
-                        processedFiles.push({ name: file.name, data: pdfBytes });
-                    }
-
-                    if (processedFiles.length === 1) {
-                        // Single File Download
-                        const blob = new Blob([processedFiles[0].data], { type: 'application/pdf' });
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = processedFiles[0].name;
-                        link.click();
-                    } else {
-                        // ZIP Download
-                        processedFiles.forEach(f => {
-                            zip.file(f.name, f.data);
-                        });
-                        const content = await zip.generateAsync({ type: "blob" });
-                        downloadBlob(content, "filigranli_dosyalar.zip");
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    alert("İşlem sırasında hata oluştu: " + err.message);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>PDF\'i İndir</span>';
+                    const pdfBytes = await pdfDoc.save();
+                    processedFiles.push({ name: file.name, data: pdfBytes });
                 }
+
+                if (processedFiles.length === 1) {
+                    // Single File Download
+                    const blob = new Blob([processedFiles[0].data], { type: 'application/pdf' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = processedFiles[0].name;
+                    link.click();
+                } else {
+                    // ZIP Download
+                    processedFiles.forEach(f => {
+                        zip.file(f.name, f.data);
+                    });
+                    const content = await zip.generateAsync({ type: "blob" });
+                    downloadBlob(content, "filigranli_dosyalar.zip");
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("İşlem sırasında hata oluştu: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>PDF\'i İndir</span>';
             }
+        }
 
-            // ================= MERGER TOOL LOGIC (NEW) =================
-            const mergerDropZone = document.getElementById('dropZoneMerger');
-            const mergerInput = document.getElementById('pdfInputMerger');
-            let mergerFiles = []; // { name: string, file: File, code: string, suffix: string }
+        // ================= MERGER TOOL LOGIC (NEW) =================
+        const mergerDropZone = document.getElementById('dropZoneMerger');
+        const mergerInput = document.getElementById('pdfInputMerger');
+        let mergerFiles = []; // { name: string, file: File, code: string, suffix: string }
 
-            mergerDropZone.addEventListener('dragover', (e) => { e.preventDefault(); mergerDropZone.classList.add('bg-white/30'); });
-            mergerDropZone.addEventListener('dragleave', () => { mergerDropZone.classList.remove('bg-white/30'); });
-            mergerDropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                mergerDropZone.classList.remove('bg-white/30');
-                if (e.dataTransfer.files.length) handleMergerFiles(e.dataTransfer.files);
+        mergerDropZone.addEventListener('dragover', (e) => { e.preventDefault(); mergerDropZone.classList.add('bg-white/30'); });
+        mergerDropZone.addEventListener('dragleave', () => { mergerDropZone.classList.remove('bg-white/30'); });
+        mergerDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            mergerDropZone.classList.remove('bg-white/30');
+            if (e.dataTransfer.files.length) handleMergerFiles(e.dataTransfer.files);
+        });
+        mergerDropZone.addEventListener('click', () => mergerInput.click());
+        mergerInput.addEventListener('change', (e) => { if (e.target.files.length) handleMergerFiles(e.target.files); });
+
+        function handleMergerFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type !== 'application/pdf') return;
+
+                // Parse Name: CODE_SUFFIX.pdf (e.g., ADL201U_A.pdf)
+                const nameParts = file.name.replace('.pdf', '').split('_');
+                let code = file.name, suffix = 'A';
+
+                if (nameParts.length >= 2) {
+                    suffix = nameParts.pop(); // Last part is suffix (A, B, C...)
+                    code = nameParts.join('_'); // Rest is Code
+                }
+
+                // Check duplicate (Simple Name Check)
+                if (!mergerFiles.some(f => f.name === file.name)) {
+                    mergerFiles.push({ name: file.name, file: file, code: code, suffix: suffix });
+                }
             });
-            mergerDropZone.addEventListener('click', () => mergerInput.click());
-            mergerInput.addEventListener('change', (e) => { if (e.target.files.length) handleMergerFiles(e.target.files); });
+            renderMergerGroups();
+        }
 
-            function handleMergerFiles(files) {
-                Array.from(files).forEach(file => {
-                    if (file.type !== 'application/pdf') return;
+        function clearMergerList() {
+            mergerFiles = [];
+            renderMergerGroups();
+        }
 
-                    // Parse Name: CODE_SUFFIX.pdf (e.g., ADL201U_A.pdf)
-                    const nameParts = file.name.replace('.pdf', '').split('_');
-                    let code = file.name, suffix = 'A';
+        function applyBatchRename() {
+            const findStr = document.getElementById('findText').value;
+            const replaceStr = document.getElementById('replaceText').value;
 
-                    if (nameParts.length >= 2) {
-                        suffix = nameParts.pop(); // Last part is suffix (A, B, C...)
-                        code = nameParts.join('_'); // Rest is Code
-                    }
+            if (!findStr) return;
 
-                    // Check duplicate (Simple Name Check)
-                    if (!mergerFiles.some(f => f.name === file.name)) {
-                        mergerFiles.push({ name: file.name, file: file, code: code, suffix: suffix });
-                    }
-                });
-                renderMergerGroups();
+            const inputs = document.querySelectorAll('.group-filename-input');
+            inputs.forEach(input => {
+                input.value = input.value.split(findStr).join(replaceStr);
+            });
+        }
+
+        function renderMergerGroups() {
+            const container = document.getElementById('groupsContainer');
+            const emptyMsg = document.getElementById('mergerEmpty');
+            const content = document.getElementById('mergerContent');
+
+            if (mergerFiles.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                content.classList.add('hidden');
+                return;
             }
 
-            function clearMergerList() {
-                mergerFiles = [];
-                renderMergerGroups();
-            }
+            emptyMsg.classList.add('hidden');
+            content.classList.remove('hidden');
+            container.innerHTML = '';
 
-            function applyBatchRename() {
-                const findStr = document.getElementById('findText').value;
-                const replaceStr = document.getElementById('replaceText').value;
+            // Group by Code
+            const groups = {};
+            mergerFiles.forEach(item => {
+                if (!groups[item.code]) groups[item.code] = [];
+                groups[item.code].push(item);
+            });
 
-                if (!findStr) return;
+            // Sort logic: A < B < C < D
+            Object.keys(groups).forEach(code => {
+                groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
+            });
 
-                const inputs = document.querySelectorAll('.group-filename-input');
-                inputs.forEach(input => {
-                    input.value = input.value.split(findStr).join(replaceStr);
-                });
-            }
+            document.getElementById('groupCountBadge').textContent = `${Object.keys(groups).length} Grup`;
 
-            function renderMergerGroups() {
-                const container = document.getElementById('groupsContainer');
-                const emptyMsg = document.getElementById('mergerEmpty');
-                const content = document.getElementById('mergerContent');
+            Object.keys(groups).forEach(code => {
+                const groupItems = groups[code];
+                const card = document.createElement('div');
+                card.className = "bg-gray-50 rounded-lg p-4 border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4";
 
-                if (mergerFiles.length === 0) {
-                    emptyMsg.classList.remove('hidden');
-                    content.classList.add('hidden');
-                    return;
-                }
+                let partsHtml = groupItems.map(item =>
+                    `<span class="inline-block bg-white border px-2 py-1 rounded text-xs text-gray-600 mr-1">${item.suffix}</span>`
+                ).join('');
 
-                emptyMsg.classList.add('hidden');
-                content.classList.remove('hidden');
-                container.innerHTML = '';
-
-                // Group by Code
-                const groups = {};
-                mergerFiles.forEach(item => {
-                    if (!groups[item.code]) groups[item.code] = [];
-                    groups[item.code].push(item);
-                });
-
-                // Sort logic: A < B < C < D
-                Object.keys(groups).forEach(code => {
-                    groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
-                });
-
-                document.getElementById('groupCountBadge').textContent = `${Object.keys(groups).length} Grup`;
-
-                Object.keys(groups).forEach(code => {
-                    const groupItems = groups[code];
-                    const card = document.createElement('div');
-                    card.className = "bg-gray-50 rounded-lg p-4 border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4";
-
-                    let partsHtml = groupItems.map(item =>
-                        `<span class="inline-block bg-white border px-2 py-1 rounded text-xs text-gray-600 mr-1">${item.suffix}</span>`
-                    ).join('');
-
-                    card.innerHTML = `
+                card.innerHTML = `
                     <div class="flex items-center space-x-3 flex-1">
                         <div class="bg-purple-100 p-2 rounded text-purple-600"><i class="fa-solid fa-folder"></i></div>
                         <div class="flex-1">
@@ -791,96 +860,264 @@
                         ${groupItems.length} Dosya
                     </div>
                 `;
-                    container.appendChild(card);
+                container.appendChild(card);
+            });
+        }
+
+        async function processMerging() {
+            const btn = document.getElementById('mergeBtn');
+            const status = document.getElementById('mergeStatus');
+
+            if (mergerFiles.length === 0) return;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Birleştiriliyor...';
+                status.textContent = "Dosyalar işleniyor, lütfen bekleyin...";
+
+                const { PDFDocument } = PDFLib;
+                const zip = new JSZip();
+
+                // Group
+                const groups = {};
+                mergerFiles.forEach(item => {
+                    if (!groups[item.code]) groups[item.code] = [];
+                    groups[item.code].push(item);
                 });
-            }
 
-            async function processMerging() {
-                const btn = document.getElementById('mergeBtn');
-                const status = document.getElementById('mergeStatus');
+                // Get Custom Filenames from Inputs
+                const filenameMap = {};
+                document.querySelectorAll('.group-filename-input').forEach(input => {
+                    filenameMap[input.dataset.code] = input.value.trim() || input.dataset.code;
+                });
 
-                if (mergerFiles.length === 0) return;
+                const groupKeys = Object.keys(groups);
+                const finalBlobs = [];
 
-                try {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Birleştiriliyor...';
-                    status.textContent = "Dosyalar işleniyor, lütfen bekleyin...";
+                for (const code of groupKeys) {
+                    const groupItems = groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
 
-                    const { PDFDocument } = PDFLib;
-                    const zip = new JSZip();
+                    const mergedPdf = await PDFDocument.create();
 
-                    // Group
-                    const groups = {};
-                    mergerFiles.forEach(item => {
-                        if (!groups[item.code]) groups[item.code] = [];
-                        groups[item.code].push(item);
-                    });
-
-                    // Get Custom Filenames from Inputs
-                    const filenameMap = {};
-                    document.querySelectorAll('.group-filename-input').forEach(input => {
-                        filenameMap[input.dataset.code] = input.value.trim() || input.dataset.code;
-                    });
-
-                    const groupKeys = Object.keys(groups);
-                    const finalBlobs = [];
-
-                    for (const code of groupKeys) {
-                        const groupItems = groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
-
-                        const mergedPdf = await PDFDocument.create();
-
-                        for (const item of groupItems) {
-                            const fileBytes = await item.file.arrayBuffer();
-                            const srcPdf = await PDFDocument.load(fileBytes);
-                            const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
-                            copiedPages.forEach(page => mergedPdf.addPage(page));
-                        }
-
-                        const mergedBytes = await mergedPdf.save();
-                        const finalName = filenameMap[code] + ".pdf"; // Use custom name
-                        finalBlobs.push({ name: finalName, data: mergedBytes });
+                    for (const item of groupItems) {
+                        const fileBytes = await item.file.arrayBuffer();
+                        const srcPdf = await PDFDocument.load(fileBytes);
+                        const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+                        copiedPages.forEach(page => mergedPdf.addPage(page));
                     }
 
-                    if (finalBlobs.length === 1) {
-                        const blob = new Blob([finalBlobs[0].data], { type: 'application/pdf' });
-                        downloadBlob(blob, finalBlobs[0].name);
-                        status.textContent = "Tek dosya indirildi!";
-                    } else {
-                        finalBlobs.forEach(item => {
-                            zip.file(item.name, item.data);
-                        });
-                        const content = await zip.generateAsync({ type: "blob" });
-                        downloadBlob(content, "birlestirilmis_sinavlar.zip");
-                        status.textContent = "Tüm gruplar ZIP olarak indirildi!";
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    status.textContent = "Hata oluştu: " + err.message;
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-bolt"></i> <span>Birleştir ve İndir</span>';
+                    const mergedBytes = await mergedPdf.save();
+                    const finalName = filenameMap[code] + ".pdf"; // Use custom name
+                    finalBlobs.push({ name: finalName, data: mergedBytes });
                 }
-            }
 
-            function downloadBlob(blob, filename) {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                link.click();
-            }
+                if (finalBlobs.length === 1) {
+                    const blob = new Blob([finalBlobs[0].data], { type: 'application/pdf' });
+                    downloadBlob(blob, finalBlobs[0].name);
+                    status.textContent = "Tek dosya indirildi!";
+                } else {
+                    finalBlobs.forEach(item => {
+                        zip.file(item.name, item.data);
+                    });
+                    const content = await zip.generateAsync({ type: "blob" });
+                    downloadBlob(content, "birlestirilmis_sinavlar.zip");
+                    status.textContent = "Tüm gruplar ZIP olarak indirildi!";
+                }
 
-                 // ================= DRAG & DROP FOR MERGER =================
-                // (Merger logic already setup in previous steps or can be verified. 
-                //  Assuming the file was truncated during previous huge replace_file_content)
-                
-                // Note: The previous edits might have cut off the end of the script.
-                // I need to properly close the processAndDownloadPDF function if it was open, 
-                // or just close the script and body if it was at the end.
-                // Looking at line 680 in previous view, it was inside processAndDownloadPDF catch/finally block?
-                // No, line 872 is far down. let's just close everything safely.
-        
+            } catch (err) {
+                console.error(err);
+                status.textContent = "Hata oluştu: " + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-bolt"></i> <span>Birleştir ve İndir</span>';
+            }
+        }
+
+        function downloadBlob(blob, filename) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        // ================= DRAG & DROP FOR MERGER =================
+        // (Merger logic already setup in previous steps or can be verified. 
+        //  Assuming the file was truncated during previous huge replace_file_content)
+
+        // Note: The previous edits might have cut off the end of the script.
+        // I need to properly close the processAndDownloadPDF function if it was open, 
+        // or just close the script and body if it was at the end.
+        // Looking at line 680 in previous view, it was inside processAndDownloadPDF catch/finally block?
+        // No, line 872 is far down. let's just close everything safely.
+
+        // ================= AUTO TOOL LOGIC (NEW) =================
+        const autoDropZone = document.getElementById('dropZoneAuto');
+        const autoInput = document.getElementById('pdfInputAuto');
+        let autoFiles = [];
+
+        autoDropZone.addEventListener('dragover', (e) => { e.preventDefault(); autoDropZone.classList.add('bg-white/30'); });
+        autoDropZone.addEventListener('dragleave', () => { autoDropZone.classList.remove('bg-white/30'); });
+        autoDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            autoDropZone.classList.remove('bg-white/30');
+            if (e.dataTransfer.files.length) handleAutoFiles(e.dataTransfer.files);
+        });
+        autoDropZone.addEventListener('click', () => autoInput.click());
+        autoInput.addEventListener('change', (e) => { if (e.target.files.length) handleAutoFiles(e.target.files); });
+
+        function handleAutoFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type !== 'application/pdf') return;
+                const nameParts = file.name.replace('.pdf', '').split('_');
+                let code = file.name, suffix = 'A';
+                if (nameParts.length >= 2) {
+                    suffix = nameParts.pop();
+                    code = nameParts.join('_');
+                }
+                if (!autoFiles.some(f => f.name === file.name)) {
+                    autoFiles.push({ name: file.name, file: file, code: code, suffix: suffix });
+                }
+            });
+            renderAutoGroups();
+        }
+
+        function renderAutoGroups() {
+            const container = document.getElementById('autoGroupsContainer');
+            const emptyMsg = document.getElementById('autoEmpty');
+            const content = document.getElementById('autoContent');
+
+            if (autoFiles.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                content.classList.add('hidden');
+                return;
+            }
+            emptyMsg.classList.add('hidden');
+            content.classList.remove('hidden');
+            container.innerHTML = '';
+
+            const groups = {};
+            autoFiles.forEach(item => {
+                if (!groups[item.code]) groups[item.code] = [];
+                groups[item.code].push(item);
+            });
+            Object.keys(groups).forEach(code => {
+                groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
+            });
+            document.getElementById('groupCountBadgeAuto').textContent = `${Object.keys(groups).length} Grup`;
+
+            Object.keys(groups).forEach(code => {
+                const groupItems = groups[code];
+                const card = document.createElement('div');
+                card.className = "bg-pink-50 rounded-lg p-4 border border-pink-200 flex flex-col md:flex-row md:items-center justify-between gap-4";
+                let partsHtml = groupItems.map(item =>
+                    `<span class="inline-block bg-white border px-2 py-1 rounded text-xs text-gray-600 mr-1">${item.suffix}</span>`
+                ).join('');
+                card.innerHTML = `
+                        <div class="flex items-center space-x-3 flex-1">
+                            <div class="bg-pink-100 p-2 rounded text-pink-600"><i class="fa-solid fa-folder"></i></div>
+                            <div class="flex-1">
+                                <label class="text-xs text-gray-400 block mb-0.5 ml-1">Çıktı Dosya İsmi</label>
+                                <input type="text" value="${code}" data-code="${code}" class="auto-group-input w-full md:w-64 font-bold text-gray-800 bg-white border border-gray-300 rounded px-2 py-1 focus:border-pink-500 outline-none text-sm">
+                                <div class="mt-1">${partsHtml}</div>
+                            </div>
+                        </div>
+                        <div class="text-right text-xs text-gray-500">${groupItems.length} Parça</div>
+                    `;
+                container.appendChild(card);
+            });
+        }
+
+        function applyBatchRenameAuto() {
+            const findStr = document.getElementById('findTextAuto').value;
+            const replaceStr = document.getElementById('replaceTextAuto').value;
+            if (!findStr) return;
+            document.querySelectorAll('.auto-group-input').forEach(input => {
+                input.value = input.value.split(findStr).join(replaceStr);
+            });
+        }
+
+        async function processAuto() {
+            const btn = document.getElementById('autoProcessBtn');
+            const status = document.getElementById('autoStatus');
+            if (autoFiles.length === 0) return;
+
+            try {
+                if (!cachedMainFontBytes || !cachedWatermarkFontBytes) throw new Error("Fontlar yüklenmedi. Sayfayı yenileyin.");
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
+                status.textContent = "Birleştiriliyor ve Filigran ekleniyor...";
+
+                const { PDFDocument, rgb, degrees } = PDFLib;
+                const zip = new JSZip();
+
+                const groups = {};
+                autoFiles.forEach(item => {
+                    if (!groups[item.code]) groups[item.code] = [];
+                    groups[item.code].push(item);
+                });
+
+                const filenameMap = {};
+                document.querySelectorAll('.auto-group-input').forEach(input => {
+                    filenameMap[input.dataset.code] = input.value.trim() || input.dataset.code;
+                });
+
+                // Watermark Settings (read from main view)
+                const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
+                const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
+
+                const finalBlobs = [];
+                const groupKeys = Object.keys(groups);
+
+                for (const code of groupKeys) {
+                    const groupItems = groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
+                    const mergedPdf = await PDFDocument.create();
+                    mergedPdf.registerFontkit(window.fontkit);
+
+                    // 1. Merge
+                    for (const item of groupItems) {
+                        const fileBytes = await item.file.arrayBuffer();
+                        const srcPdf = await PDFDocument.load(fileBytes);
+                        const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+                        copiedPages.forEach(page => mergedPdf.addPage(page));
+                    }
+
+                    // 2. Embed Fonts & Apply Watermark
+                    const fMain = await mergedPdf.embedFont(cachedMainFontBytes);
+                    const fWm = await mergedPdf.embedFont(cachedWatermarkFontBytes);
+                    const customFonts = { main: fMain, watermark: fWm };
+
+                    mergedPdf.getPages().forEach(page => {
+                        drawOverlay(page, customFonts, rgb, degrees, texts, settings);
+                    });
+
+                    const mergedBytes = await mergedPdf.save();
+                    const finalName = filenameMap[code] + ".pdf";
+                    finalBlobs.push({ name: finalName, data: mergedBytes });
+                }
+
+                if (finalBlobs.length === 1) {
+                    const blob = new Blob([finalBlobs[0].data], { type: 'application/pdf' });
+                    downloadBlob(blob, finalBlobs[0].name);
+                    status.textContent = "İşlem tamamlandı!";
+                } else {
+                    finalBlobs.forEach(item => {
+                        zip.file(item.name, item.data);
+                    });
+                    const content = await zip.generateAsync({ type: "blob" });
+                    downloadBlob(content, "otomatik_islem_cikti.zip");
+                    status.textContent = "Hepsi tamamlandı ve indirildi!";
+                }
+
+            } catch (err) {
+                console.error(err);
+                status.textContent = "Hata: " + err.message;
+                alert("Hata: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Birleştir ve Filigran Ekle</span>';
+            }
+        }
     </script>
 </body>
 
