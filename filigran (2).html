@@ -965,15 +965,41 @@
         autoDropZone.addEventListener('click', () => autoInput.click());
         autoInput.addEventListener('change', (e) => { if (e.target.files.length) handleAutoFiles(e.target.files); });
 
+        function normalizeTurkish(text) {
+            text = text.normalize('NFC'); // Fix for separated diacritics (NFD -> NFC)
+            const trMap = {
+                '\u00E7': 'c', '\u00C7': 'C', // ç, Ç
+                '\u011F': 'g', '\u011E': 'G', // ğ, Ğ
+                '\u0131': 'i', '\u0130': 'I', // ı, İ
+                '\u00F6': 'o', '\u00D6': 'O', // ö, Ö
+                '\u015F': 's', '\u015E': 'S', // ş, Ş
+                '\u00FC': 'u', '\u00DC': 'U'  // ü, Ü
+            };
+            return text.replace(/[\u00E7\u00C7\u011F\u011E\u0131\u0130\u00F6\u00D6\u015F\u015E\u00FC\u00DC]/g, function (match) {
+                return trMap[match];
+            });
+        }
+
         function handleAutoFiles(files) {
             Array.from(files).forEach(file => {
                 if (file.type !== 'application/pdf') return;
-                const nameParts = file.name.replace('.pdf', '').split('_');
-                let code = file.name, suffix = 'A';
+
+                // normalize filename first for processing
+                const originalName = file.name.replace('.pdf', '');
+                const nameParts = originalName.split('_');
+
+                let code = originalName;
+                let suffix = 'A';
+
                 if (nameParts.length >= 2) {
                     suffix = nameParts.pop();
                     code = nameParts.join('_');
                 }
+
+                // Apply Turkish normalization
+                code = normalizeTurkish(code);
+                suffix = normalizeTurkish(suffix);
+
                 if (!autoFiles.some(f => f.name === file.name)) {
                     autoFiles.push({ name: file.name, file: file, code: code, suffix: suffix });
                 }
@@ -1031,8 +1057,14 @@
             const findStr = document.getElementById('findTextAuto').value;
             const replaceStr = document.getElementById('replaceTextAuto').value;
             if (!findStr) return;
+
             document.querySelectorAll('.auto-group-input').forEach(input => {
-                input.value = input.value.split(findStr).join(replaceStr);
+                const val = input.value;
+                // Replace ONLY the last occurrence (Targeting suffixes like 'U')
+                const lastIndex = val.lastIndexOf(findStr);
+                if (lastIndex !== -1) {
+                    input.value = val.substring(0, lastIndex) + replaceStr + val.substring(lastIndex + findStr.length);
+                }
             });
         }
 
