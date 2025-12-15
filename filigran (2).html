@@ -1128,71 +1128,72 @@
                 autoFiles.forEach(item => {
                     if (!groups[item.code]) groups[item.code] = [];
                     groups[item.code].push(item);
-                    const filenameMap = {};
-                    document.querySelectorAll('.auto-group-input').forEach(input => {
-                        filenameMap[input.dataset.code] = input.value.trim() || input.dataset.code;
+                });
+
+                const filenameMap = {};
+                document.querySelectorAll('.auto-group-input').forEach(input => {
+                    filenameMap[input.dataset.code] = input.value.trim() || input.dataset.code;
+                });
+
+                // Watermark Settings (read from main view)
+                const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
+                const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
+                const colors = {
+                    main: hexToPdfColor(document.getElementById('mainColor').value),
+                    watermark: hexToPdfColor(document.getElementById('watermarkColor').value)
+                };
+
+                const finalBlobs = [];
+                const groupKeys = Object.keys(groups);
+
+                for (const code of groupKeys) {
+                    const groupItems = groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
+                    const mergedPdf = await PDFDocument.create();
+                    mergedPdf.registerFontkit(window.fontkit);
+
+                    // 1. Merge
+                    for (const item of groupItems) {
+                        const fileBytes = await item.file.arrayBuffer();
+                        const srcPdf = await PDFDocument.load(fileBytes);
+                        const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+                        copiedPages.forEach(page => mergedPdf.addPage(page));
+                    }
+
+                    // 2. Embed Fonts & Apply Watermark
+                    const fMain = await mergedPdf.embedFont(cachedMainFontBytes);
+                    const fWm = await mergedPdf.embedFont(cachedWatermarkFontBytes);
+                    const customFonts = { main: fMain, watermark: fWm };
+
+                    mergedPdf.getPages().forEach(page => {
+                        drawOverlay(page, customFonts, rgb, degrees, texts, settings, colors);
                     });
 
-                    // Watermark Settings (read from main view)
-                    const texts = { header: document.getElementById('headerText').value, watermark: document.getElementById('watermarkText').value, footer: document.getElementById('footerText').value };
-                    const settings = { headerFontSize: document.getElementById('headerFontSize').value, footerFontSize: document.getElementById('footerFontSize').value };
-                    const colors = {
-                        main: hexToPdfColor(document.getElementById('mainColor').value),
-                        watermark: hexToPdfColor(document.getElementById('watermarkColor').value)
-                    };
-
-                    const finalBlobs = [];
-                    const groupKeys = Object.keys(groups);
-
-                    for (const code of groupKeys) {
-                        const groupItems = groups[code].sort((a, b) => a.suffix.localeCompare(b.suffix));
-                        const mergedPdf = await PDFDocument.create();
-                        mergedPdf.registerFontkit(window.fontkit);
-
-                        // 1. Merge
-                        for (const item of groupItems) {
-                            const fileBytes = await item.file.arrayBuffer();
-                            const srcPdf = await PDFDocument.load(fileBytes);
-                            const copiedPages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
-                            copiedPages.forEach(page => mergedPdf.addPage(page));
-                        }
-
-                        // 2. Embed Fonts & Apply Watermark
-                        const fMain = await mergedPdf.embedFont(cachedMainFontBytes);
-                        const fWm = await mergedPdf.embedFont(cachedWatermarkFontBytes);
-                        const customFonts = { main: fMain, watermark: fWm };
-
-                        mergedPdf.getPages().forEach(page => {
-                            drawOverlay(page, customFonts, rgb, degrees, texts, settings, colors);
-                        });
-
-                        const mergedBytes = await mergedPdf.save();
-                        const finalName = filenameMap[code] + ".pdf";
-                        finalBlobs.push({ name: finalName, data: mergedBytes });
-                    }
-
-                    if (finalBlobs.length === 1) {
-                        const blob = new Blob([finalBlobs[0].data], { type: 'application/pdf' });
-                        downloadBlob(blob, finalBlobs[0].name);
-                        status.textContent = "İşlem tamamlandı!";
-                    } else {
-                        finalBlobs.forEach(item => {
-                            zip.file(item.name, item.data);
-                        });
-                        const content = await zip.generateAsync({ type: "blob" });
-                        downloadBlob(content, "otomatik_islem_cikti.zip");
-                        status.textContent = "Hepsi tamamlandı ve indirildi!";
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    status.textContent = "Hata: " + err.message;
-                    alert("Hata: " + err.message);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Birleştir ve Filigran Ekle</span>';
+                    const mergedBytes = await mergedPdf.save();
+                    const finalName = filenameMap[code] + ".pdf";
+                    finalBlobs.push({ name: finalName, data: mergedBytes });
                 }
+
+                if (finalBlobs.length === 1) {
+                    const blob = new Blob([finalBlobs[0].data], { type: 'application/pdf' });
+                    downloadBlob(blob, finalBlobs[0].name);
+                    status.textContent = "İşlem tamamlandı!";
+                } else {
+                    finalBlobs.forEach(item => {
+                        zip.file(item.name, item.data);
+                    });
+                    const content = await zip.generateAsync({ type: "blob" });
+                    downloadBlob(content, "otomatik_islem_cikti.zip");
+                    status.textContent = "Hepsi tamamlandı ve indirildi!";
+                }
+            } catch (err) {
+                console.error(err);
+                status.textContent = "Hata: " + err.message;
+                alert("Hata: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Birleştir ve Filigran Ekle</span>';
             }
+        }
     </script>
 </body>
 
