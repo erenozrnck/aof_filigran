@@ -258,10 +258,8 @@
                         <div
                             class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 flex flex-col md:flex-row items-center gap-3">
                             <div class="text-sm font-bold text-gray-600 whitespace-nowrap"><i
-                                    class="fa-solid fa-pen-to-square"></i> Toplu İsim Değiştir:</div>
-                            <input type="text" id="findText" placeholder="Aranan (Örn: U)"
-                                class="flex-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-purple-500 outline-none">
-                            <input type="text" id="replaceText" placeholder="Yeni (Örn: -guz-AS)"
+                                    class="fa-solid fa-pen-to-square"></i> Dosya Adı Sonuna Ekle:</div>
+                            <input type="text" id="suffixText" placeholder="Örn: -guz-donemi"
                                 class="flex-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-purple-500 outline-none">
                             <button onclick="applyBatchRename()"
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-1.5 rounded transition">Uygula</button>
@@ -319,10 +317,8 @@
                         <div
                             class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 flex flex-col md:flex-row items-center gap-3">
                             <div class="text-sm font-bold text-gray-600 whitespace-nowrap"><i
-                                    class="fa-solid fa-pen-to-square"></i> Toplu İsim Değiştir:</div>
-                            <input type="text" id="findTextAuto" placeholder="Aranan (Örn: U)"
-                                class="flex-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-pink-500 outline-none">
-                            <input type="text" id="replaceTextAuto" placeholder="Yeni (Örn: -guz-AS)"
+                                    class="fa-solid fa-pen-to-square"></i> Dosya Adı Sonuna Ekle:</div>
+                            <input type="text" id="suffixTextAuto" placeholder="Örn: -guz-donemi"
                                 class="flex-1 w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:border-pink-500 outline-none">
                             <button onclick="applyBatchRenameAuto()"
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-1.5 rounded transition">Uygula</button>
@@ -839,14 +835,12 @@
         }
 
         function applyBatchRename() {
-            const findStr = document.getElementById('findText').value;
-            const replaceStr = document.getElementById('replaceText').value;
-
-            if (!findStr) return;
+            const suffix = document.getElementById('suffixText').value;
+            if (!suffix) return;
 
             const inputs = document.querySelectorAll('.group-filename-input');
             inputs.forEach(input => {
-                input.value = input.value.split(findStr).join(replaceStr);
+                input.value = input.value + suffix;
             });
         }
 
@@ -1095,17 +1089,11 @@
         }
 
         function applyBatchRenameAuto() {
-            const findStr = document.getElementById('findTextAuto').value;
-            const replaceStr = document.getElementById('replaceTextAuto').value;
-            if (!findStr) return;
+            const suffix = document.getElementById('suffixTextAuto').value;
+            if (!suffix) return;
 
             document.querySelectorAll('.auto-group-input').forEach(input => {
-                const val = input.value;
-                // Replace ONLY the last occurrence (Targeting suffixes like 'U')
-                const lastIndex = val.lastIndexOf(findStr);
-                if (lastIndex !== -1) {
-                    input.value = val.substring(0, lastIndex) + replaceStr + val.substring(lastIndex + findStr.length);
-                }
+                input.value = input.value + suffix;
             });
         }
 
