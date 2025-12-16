@@ -155,9 +155,15 @@
                                 <div>
                                     <label class="block text-xs font-medium text-gray-700 mb-1">Filigran Rengi</label>
                                     <div class="flex items-center space-x-2">
-                                        <input type="color" id="watermarkColor" value="#cccccc"
+                                        <input type="color" id="watermarkColor" value="#DFDFDF"
                                             class="h-8 w-full cursor-pointer rounded border border-gray-300 p-0.5">
                                     </div>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Filigran Opaklığı: <span
+                                            id="opacityValue">0.85</span></label>
+                                    <input type="range" id="watermarkOpacity" min="0" max="100" value="85"
+                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 </div>
                             </div>
                             <hr class="border-gray-100">
@@ -547,6 +553,16 @@
             });
         });
 
+        // Opacity Listener
+        const opacityInput = document.getElementById('watermarkOpacity');
+        const opacityValueDisplay = document.getElementById('opacityValue');
+        opacityInput.addEventListener('input', (e) => {
+            const val = e.target.value / 100;
+            opacityValueDisplay.textContent = val.toFixed(2);
+            clearTimeout(previewDebounceTimer);
+            previewDebounceTimer = setTimeout(updatePreview, 100);
+        });
+
         // 3. Handlers
         async function handleFiles(files) {
             watermarkFiles = [];
@@ -671,11 +687,13 @@
             return { r, g, b };
         }
 
-        function drawOverlay(page, fonts, rgb, degrees, texts, settings, colors) {
+        function drawOverlay(page, fonts, rgb, degrees, texts, settings, colors, opacity) {
+            const { BlendMode } = PDFLib;
             const fontMain = fonts.main;
             const fontWatermark = fonts.watermark;
             const colorMain = colors ? rgb(colors.main.r, colors.main.g, colors.main.b) : rgb(0, 0, 0);
             const colorWm = colors ? rgb(colors.watermark.r, colors.watermark.g, colors.watermark.b) : rgb(0.8, 0.8, 0.8);
+            const wmOpacity = opacity !== undefined ? opacity : 0.25;
 
             const { width, height } = page.getSize();
             const margin = 40;
@@ -736,7 +754,8 @@
                     page.drawText(line, {
                         x: (width / 2) + xRotated,
                         y: (height / 2) + yRotated,
-                        size: baseFontSize, font: fontWatermark, color: colorWm, opacity: 0.25, rotate: degrees(45)
+                        size: baseFontSize, font: fontWatermark, color: colorWm, opacity: wmOpacity, rotate: degrees(45),
+                        blendMode: BlendMode.Multiply
                     });
                 });
             }
@@ -764,7 +783,8 @@
                     main: hexToPdfColor(document.getElementById('mainColor').value),
                     watermark: hexToPdfColor(document.getElementById('watermarkColor').value)
                 };
-                drawOverlay(firstPage, customFonts, rgb, degrees, texts, settings, colors);
+                const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
+                drawOverlay(firstPage, customFonts, rgb, degrees, texts, settings, colors, opacity);
                 const singlePagePdf = await PDFDocument.create();
                 const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [0]);
                 singlePagePdf.addPage(copiedPage);
@@ -814,8 +834,9 @@
                         main: hexToPdfColor(document.getElementById('mainColor').value),
                         watermark: hexToPdfColor(document.getElementById('watermarkColor').value)
                     };
+                    const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
 
-                    pdfDoc.getPages().forEach(page => drawOverlay(page, customFonts, rgb, degrees, texts, settings, colors));
+                    pdfDoc.getPages().forEach(page => drawOverlay(page, customFonts, rgb, degrees, texts, settings, colors, opacity));
 
                     const pdfBytes = await pdfDoc.save();
                     processedFiles.push({ name: file.name, data: pdfBytes });
@@ -1206,6 +1227,7 @@
                     main: hexToPdfColor(document.getElementById('mainColor').value),
                     watermark: hexToPdfColor(document.getElementById('watermarkColor').value)
                 };
+                const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
 
                 const finalBlobs = [];
                 const groupKeys = Object.keys(groups);
@@ -1229,7 +1251,7 @@
                     const customFonts = { main: fMain, watermark: fWm };
 
                     mergedPdf.getPages().forEach(page => {
-                        drawOverlay(page, customFonts, rgb, degrees, texts, settings, colors);
+                        drawOverlay(page, customFonts, rgb, degrees, texts, settings, colors, opacity);
                     });
 
                     const mergedBytes = await mergedPdf.save();
