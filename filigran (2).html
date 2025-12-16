@@ -254,6 +254,13 @@
                     </div>
 
                     <div id="mergerContent" class="p-6 hidden">
+                        <!-- Suffix Filter Toolbar -->
+                        <div id="mergerFilterContainer"
+                            class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-3 min-h-[50px]">
+                            <span class="text-xs font-bold text-gray-400 uppercase">Gruplar:</span>
+                            <!-- Checkboxes injected by JS -->
+                        </div>
+
                         <!-- Batch Rename Toolbar -->
                         <div
                             class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 flex flex-col md:flex-row items-center gap-3">
@@ -313,6 +320,13 @@
                     </div>
 
                     <div id="autoContent" class="p-6 hidden">
+                        <!-- Suffix Filter Toolbar -->
+                        <div id="autoFilterContainer"
+                            class="bg-pink-50 border border-pink-200 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-3 min-h-[50px]">
+                            <span class="text-xs font-bold text-gray-400 uppercase">Gruplar:</span>
+                            <!-- Checkboxes injected by JS -->
+                        </div>
+
                         <!-- Batch Rename Toolbar for Auto -->
                         <div
                             class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 flex flex-col md:flex-row items-center gap-3">
@@ -383,6 +397,45 @@
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('-translate-x-full');
             sidebar.classList.toggle('absolute'); // Mobile overlay mode if needed
+        }
+
+        // ================= SHARED FILTER LOGIC =================
+        function renderSuffixFilters(files, containerId, currentActive, onChange) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // 1. Get Unique Suffixes
+            const suffixes = [...new Set(files.map(f => f.suffix))].sort();
+
+            // 2. Initialize active list if empty (select all by default)
+            if (currentActive.length === 0 && suffixes.length > 0) {
+                currentActive.push(...suffixes);
+                // Sync back to parent state immediately
+                onChange(currentActive);
+            }
+
+            container.innerHTML = '<span class="text-xs font-bold text-gray-400 uppercase">Gruplar:</span>';
+
+            suffixes.forEach(suffix => {
+                const isChecked = currentActive.includes(suffix);
+                const wrapper = document.createElement('label');
+                wrapper.className = "flex items-center space-x-1 cursor-pointer bg-white px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 select-none";
+                wrapper.innerHTML = `
+                    <input type="checkbox" value="${suffix}" ${isChecked ? 'checked' : ''} class="w-4 h-4 text-purple-600 rounded">
+                    <span class="text-sm font-bold text-gray-700">${suffix}</span>
+                `;
+
+                const checkbox = wrapper.querySelector('input');
+                checkbox.addEventListener('change', (e) => {
+                    if (checkbox.checked) {
+                        if (!currentActive.includes(suffix)) currentActive.push(suffix);
+                    } else {
+                        currentActive = currentActive.filter(s => s !== suffix);
+                    }
+                    onChange(currentActive);
+                });
+                container.appendChild(wrapper);
+            });
         }
         // ================= GLOBAL VARIABLES & CONFIG =================
         let watermarkFiles = [];
@@ -797,6 +850,7 @@
         const mergerDropZone = document.getElementById('dropZoneMerger');
         const mergerInput = document.getElementById('pdfInputMerger');
         let mergerFiles = []; // { name: string, file: File, code: string, suffix: string }
+        let activeSuffixesMerger = []; // List of active suffixes ['A', 'B']
 
         mergerDropZone.addEventListener('dragover', (e) => { e.preventDefault(); mergerDropZone.classList.add('bg-white/30'); });
         mergerDropZone.addEventListener('dragleave', () => { mergerDropZone.classList.remove('bg-white/30'); });
@@ -826,11 +880,19 @@
                     mergerFiles.push({ name: file.name, file: file, code: code, suffix: suffix });
                 }
             });
+
+            // Re-render filters (updates activeSuffixes automatically if new ones appear)
+            renderSuffixFilters(mergerFiles, 'mergerFilterContainer', activeSuffixesMerger, (newActive) => {
+                activeSuffixesMerger = newActive;
+                renderMergerGroups();
+            });
             renderMergerGroups();
         }
 
         function clearMergerList() {
             mergerFiles = [];
+            activeSuffixesMerger = [];
+            renderSuffixFilters([], 'mergerFilterContainer', [], () => { });
             renderMergerGroups();
         }
 
@@ -861,7 +923,9 @@
 
             // Group by Code
             const groups = {};
-            mergerFiles.forEach(item => {
+            const filteredFiles = mergerFiles.filter(item => activeSuffixesMerger.includes(item.suffix));
+
+            filteredFiles.forEach(item => {
                 if (!groups[item.code]) groups[item.code] = [];
                 groups[item.code].push(item);
             });
@@ -915,7 +979,10 @@
 
                 // Group
                 const groups = {};
-                mergerFiles.forEach(item => {
+                // Use FILTERED files for processing
+                const filteredFiles = mergerFiles.filter(item => activeSuffixesMerger.includes(item.suffix));
+
+                filteredFiles.forEach(item => {
                     if (!groups[item.code]) groups[item.code] = [];
                     groups[item.code].push(item);
                 });
@@ -989,6 +1056,7 @@
         const autoDropZone = document.getElementById('dropZoneAuto');
         const autoInput = document.getElementById('pdfInputAuto');
         let autoFiles = [];
+        let activeSuffixesAuto = [];
 
         autoDropZone.addEventListener('dragover', (e) => { e.preventDefault(); autoDropZone.classList.add('bg-white/30'); });
         autoDropZone.addEventListener('dragleave', () => { autoDropZone.classList.remove('bg-white/30'); });
@@ -1039,6 +1107,10 @@
                     autoFiles.push({ name: file.name, file: file, code: code, suffix: suffix });
                 }
             });
+            renderSuffixFilters(autoFiles, 'autoFilterContainer', activeSuffixesAuto, (newActive) => {
+                activeSuffixesAuto = newActive;
+                renderAutoGroups();
+            });
             renderAutoGroups();
         }
 
@@ -1057,7 +1129,9 @@
             container.innerHTML = '';
 
             const groups = {};
-            autoFiles.forEach(item => {
+            const filteredFiles = autoFiles.filter(item => activeSuffixesAuto.includes(item.suffix));
+
+            filteredFiles.forEach(item => {
                 if (!groups[item.code]) groups[item.code] = [];
                 groups[item.code].push(item);
             });
@@ -1113,7 +1187,9 @@
                 const zip = new JSZip();
 
                 const groups = {};
-                autoFiles.forEach(item => {
+                const filteredFiles = autoFiles.filter(item => activeSuffixesAuto.includes(item.suffix));
+
+                filteredFiles.forEach(item => {
                     if (!groups[item.code]) groups[item.code] = [];
                     groups[item.code].push(item);
                 });
@@ -1182,6 +1258,8 @@
                 btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Birleştir ve Filigran Ekle</span>';
             }
         }
+
+
     </script>
 </body>
 
